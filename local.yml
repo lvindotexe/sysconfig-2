@@ -4,16 +4,28 @@
   become: true
 
   tasks:
-  - name: install packages
-    package:
-      name:
-        - htop
-        - tmux
-        - neovim
-        - neofetch
-        - noto-fonts-cjk
-        - noto-fonts-emoji
-        - noto-fonts-extra
+  - name: install packages arch, ubuntu fallback
+    block:
+      - name: installing Arch packages
+        ansible.builtin.package:
+          name:
+            - htop
+            - tmux
+            - neovim
+            - neofetch
+            - noto-fonts
+          state:  present
+    rescue:
+      - name: Fallback ubuntu Packages
+        ansible.builtin.debug:
+          msg: "installing packages failed,attempting to install on ubuntu"
+      
+      - name:  installing noto-fonts ubuntu
+        ansible.builtin.package:
+          name: fonts-noto
+          state: present
+        when: "'noto-fonts-example' in ansible_failed_result.results | map(attribute='item') | list"
+        
 
   - name: copy wallpaper
     copy:
