@@ -48,9 +48,9 @@
     - { src: 'share/icons/hicolor/128x128/apps/nvim.png', dest: '/usr/share/icons/hicolor/128x128/apps/nvim.png' , mode: '0644'}
     - { src: 'share/locale/en_GB/LC_MESSAGES/nvim.mo' , dest: '/usr/share/locale/en_GB/LC_MESSAGES/nvim.mo' , mode: '0644'}
     - { src: 'share/nvim/runtime' , dest: '/usr/share/nvim/' , mode: '0755'}
-  notify:
-    - update_mandb
-    - update_locales
+  # notify:
+  #   - update_mandb
+  #   - update_locales
 
 - name: Update default editor, use nVim for everything
   command:
