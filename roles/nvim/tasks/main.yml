@@ -4,7 +4,6 @@
     url: https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
     dest: /tmp/nvim-linux64.tar.gz
     mode: '0644'
-    become: yes
 
 - name: Remove existing Neovim installation
   ansible.builtin.file:
