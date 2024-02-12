@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  connection: local
+  become: true
+
+  tasks
+  - name: install packages
+    package:
+      name:
+        - htop
+        - tmux
+        - neovim
+        - neofetch
+        - noto-fonts-cjk
+        - noto-fonts-emoji
+        - noto-fonts-extra
+
+
+  - name: copy wallpaper
+    copy:
+      src:  static/wallpaper.jpg
+      dest: /usr/.local/wallpapers/wallpaper.png
+      owner:  root
+      group:  root
+  
