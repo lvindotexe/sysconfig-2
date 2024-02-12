@@ -1,3 +1,4 @@
+---
 - name: Download latest nVim release
   get_url:
     url: 'https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.tar.gz'
