@@ -3,7 +3,8 @@
   connection: local
   become: true
   gather_facts: true
-
+  roles:
+    - nvim
   tasks:
     - name: Install packages on Arch Linux
       ansible.builtin.package:
@@ -40,7 +41,7 @@
     - name: Copy wallpaper
       ansible.builtin.copy:
         src: static/wallpaper.jpg
-        dest: /home/.local/share/wallpapers/wallpape.jpg
+        dest: /home/al/.local/share/wallpapers/wallpape.jpg
         owner: root
         group: root
         mode: '0644'
