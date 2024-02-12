@@ -3,7 +3,7 @@
   connection: local
   become: true
 
-  tasks
+  tasks:
   - name: install packages
     package:
       name:
@@ -14,7 +14,6 @@
         - noto-fonts-cjk
         - noto-fonts-emoji
         - noto-fonts-extra
-
 
   - name: copy wallpaper
     copy:
