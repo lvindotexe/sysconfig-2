@@ -33,7 +33,7 @@
     
     - name: ensure wallpaper dir exists
       file: 
-        path: /home/.local/share/wallpapers
+        path: /home/{{ansible_user }}/.local/share/wallpapers
         state:  directory
         owner:  root
         group:  root
