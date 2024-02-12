@@ -4,22 +4,25 @@
     src: .bash_aliases
     dest: "/home/{{ ansible_user }}/.bash_aliases"
     mode: '0644'
+    force: yes
 
 - name: Ensure .bash_logout is present in the user's home directory
   ansible.builtin.copy:
     src: .bash_logout
     dest: "/home/{{ ansible_user }}/.bash_logout"
     mode: '0644'
+    force: yes
 
 - name: Ensure .bashrc is present in the user's home directory
   ansible.builtin.copy:
     src: .bashrc
     dest: "/home/{{ ansible_user }}/.bashrc"
     mode: '0644'
+    force: yes
 
 - name: Ensure .profile is present in the user's home directory
   ansible.builtin.copy:
     src: .profile
     dest: "/home/{{ ansible_user }}/.profile"
     mode: '0644'
-
+    force: yes

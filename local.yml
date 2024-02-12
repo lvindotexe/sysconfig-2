@@ -24,7 +24,6 @@
         name:
           - htop
           - tmux
-          - neovim
           - neofetch
           - fonts-noto
         state: present
