@@ -27,6 +27,6 @@
 - name: "Neovim | Create symlink to role files directory"
   ansible.builtin.file:
     src: "{{ role_path }}/files"
-    dest: "{{ ansible_user }}/.config/nvim"
+    dest: "/home/{{ ansible_user }}/.config/nvim"
     state: link
     force: true
