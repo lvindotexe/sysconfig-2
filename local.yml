@@ -28,11 +28,19 @@
         state: present
         use: apt
       when: ansible_os_family == "Debian"
+    
+    - name: ensure wallpaper dir exists
+      file: 
+        path: /home/.local/share/wallpapers
+        state:  directory
+        owner:  root
+        group:  root
+        mode: '0755' 
 
     - name: Copy wallpaper
       ansible.builtin.copy:
         src: static/wallpaper.jpg
-        dest: /usr/local/share/wallpapers/wallpaper.jpg
+        dest: /home/.local/share/wallpapers/wallpape.jpg
         owner: root
         group: root
         mode: '0644'
