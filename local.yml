@@ -2,35 +2,37 @@
 - hosts: localhost
   connection: local
   become: true
+  gather_facts: true
 
   tasks:
-  - name: install packages arch, ubuntu fallback
-    block:
-      - name: installing Arch packages
-        ansible.builtin.package:
-          name:
-            - htop
-            - tmux
-            - neovim
-            - neofetch
-            - noto-fonts
-          state:  present
-    rescue:
-      - name: Fallback ubuntu Packages
-        ansible.builtin.debug:
-          msg: "installing packages failed,attempting to install on ubuntu"
-      
-      - name:  installing noto-fonts ubuntu
-        ansible.builtin.package:
-          name: fonts-noto
-          state: present
-        when: "'noto-fonts-example' in ansible_failed_result.results | map(attribute='item') | list"
-        
+    - name: Install packages on Arch Linux
+      ansible.builtin.package:
+        name:
+          - htop
+          - tmux
+          - neovim
+          - neofetch
+          - noto-fonts
+        state: present
+        use: pacman
+      when: ansible_os_family == "Archlinux"
 
-  - name: copy wallpaper
-    copy:
-      src:  static/wallpaper.jpg
-      dest: /usr/.local/wallpapers/wallpaper.png
-      owner:  root
-      group:  root
-  
+    - name: Install packages on Ubuntu
+      ansible.builtin.package:
+        name:
+          - htop
+          - tmux
+          - neovim
+          - neofetch
+          - fonts-noto
+        state: present
+        use: apt
+      when: ansible_os_family == "Debian"
+
+    - name: Copy wallpaper
+      ansible.builtin.copy:
+        src: static/wallpaper.jpg
+        dest: /usr/local/share/wallpapers/wallpaper.jpg
+        owner: root
+        group: root
+        mode: '0644'
