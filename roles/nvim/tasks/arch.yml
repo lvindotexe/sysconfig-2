@@ -1,0 +1,8 @@
+---
+- name: Install neovim on Arch Linux
+  ansible.builtin.package:
+    name: neovim
+    state: present
+    use: pacman
+  become: yes
+  when: ansible_os_family == "Archlinux"

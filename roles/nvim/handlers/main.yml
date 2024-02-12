@@ -1,7 +1,13 @@
 - name: update_mandb
-  become: yes  # Likely needed to update mandb, which requires root privileges
+  become: yes  
   command: mandb
 
 - name: update_locales
-  become: yes  # This is usually required for locale updates
+  become: yes 
   command: locale-gen
+
+- name: "Neovim | Copy configuration files to the target directory"
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/"
+    dest: "{{ ansible_user_dir }}/.config/nvim"
+    remote_src: no
