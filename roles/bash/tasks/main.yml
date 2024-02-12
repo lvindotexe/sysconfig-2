@@ -1,24 +1,25 @@
 ---
-- name: Deploy custom .bashrc
-  copy:
-    src: "{{ role_path }}/config/.bashrc"
+- name: Ensure .bash_aliases is present in the user's home directory
+  ansible.builtin.copy:
+    src: .bash_aliases
+    dest: "/home/{{ ansible_user }}/.bash_aliases"
+    mode: '0644'
+
+- name: Ensure .bash_logout is present in the user's home directory
+  ansible.builtin.copy:
+    src: .bash_logout
+    dest: "/home/{{ ansible_user }}/.bash_logout"
+    mode: '0644'
+
+- name: Ensure .bashrc is present in the user's home directory
+  ansible.builtin.copy:
+    src: .bashrc
     dest: "/home/{{ ansible_user }}/.bashrc"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     mode: '0644'
 
-- name: Deploy custom .bash_profile
-  copy:
-    src: "{{ role_path }}/config/.bash_profile"
-    dest: "/home/{{ ansible_user }}/.bash_profile"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+- name: Ensure .profile is present in the user's home directory
+  ansible.builtin.copy:
+    src: .profile
+    dest: "/home/{{ ansible_user }}/.profile"
     mode: '0644'
 
-- name: Deploy custom bash scripts
-  copy:
-    src: "{{ role_path }}/config/my_script.sh"
-    dest: "/usr/local/bin/my_script.sh"
-    owner: "root"
-    group: "root"
-    mode: '0755'

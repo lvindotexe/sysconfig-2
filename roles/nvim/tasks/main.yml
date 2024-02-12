@@ -23,3 +23,10 @@
     path: /tmp/nvim-linux64.tar.gz
     state: absent
   when: unarchive_result.changed
+
+- name: "Neovim | Create symlink to role files directory"
+  ansible.builtin.file:
+    src: "{{ role_path }}/files"
+    dest: "{{ ansible_user }}/.config/nvim"
+    state: link
+    force: true
