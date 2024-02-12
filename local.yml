@@ -5,6 +5,7 @@
   gather_facts: true
   roles:
     - nvim
+    - bash
   tasks:
     - name: Install packages on Arch Linux
       ansible.builtin.package:
@@ -41,7 +42,7 @@
     - name: Copy wallpaper
       ansible.builtin.copy:
         src: static/wallpaper.jpg
-        dest: /home/al/.local/share/wallpapers/wallpape.jpg
+        dest: /home/{{ ansible_user }}/.local/share/wallpapers/wallpape.jpg
         owner: root
         group: root
         mode: '0644'
