@@ -3,7 +3,7 @@
 set -e
 
 # Repository URL
-REPO_URL="https://github.com/your/repository.git"
+REPO_URL="https://github.com/lvindotexe/sysconfig-2.git"
 # Initialize DEST_FOLDER with a hardcoded value
 DEST_FOLDER="sysconfig-2"
 # The extra_args variable will be set based on the current non-root user
