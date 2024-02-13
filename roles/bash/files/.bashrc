@@ -61,6 +61,16 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
+# enable tmux for every terminal
+if [[ -z "$TMUX" ]]; then
+    ID=$(/usr/bin/tmux ls | grep -vm1 attached | cut -d: -f1)
+    if [[ -z "${ID}" ]]; then
+        /usr/bin/tmux new-session
+    else
+        /usr/bin/tmux attach-session -t "${ID}"
+    fi
+fi
+
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
