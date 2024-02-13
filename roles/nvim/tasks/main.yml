@@ -1,7 +1,7 @@
 ---
-- name: install nvim on ubuntu
+- name: nvim  | install nvim 
   block:
-    - name: Download latest nvim release
+    - name: nvim  | download latest nvim release
       get_url:
         url: 'https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.tar.gz'
         dest: /tmp/nvim-linux64.tar.gz
@@ -9,19 +9,19 @@
         owner: root
       register: nvim_release
 
-    - name: Make sure that we start clean
+    - name: nvim  | make sure that we start clean
       file:
         path: '/tmp/nvim-linux64/'
         state: absent
 
-    - name: Unpack nvim release
+    - name: nvim  | Unpack nvim release
       ansible.builtin.unarchive:
         src: /tmp/nvim-linux64.tar.gz
         dest: /tmp/
         decrypt: False
         remote_src: True
 
-    - name: Clean-up previous nvim install
+    - name: nvim  | clean-up previous nvim install
       file:
         path: '{{ item }}'
         state: absent
@@ -34,7 +34,7 @@
         - /usr/share/locale/en_GB/LC_MESSAGES/nvim.mo
         - /usr/share/man/man1/nvim.1
 
-    - name: Install latest nvim release
+    - name: nvim  | install latest nvim release
       copy:
         src: '/tmp/nvim-linux64/{{ item.src }}'
         dest: '{{ item.dest }}'
@@ -54,7 +54,7 @@
       #   - update_mandb
       #   - update_locales
 
-    - name: Update default editor, use nvim for everything
+    - name: nvim | set nvim as default editor
       command:
         cmd: "{{ item }}"
       become: True
@@ -66,7 +66,7 @@
         - 'update-alternatives --set vi /usr/bin/nvim'
         - 'update-alternatives --set vim /usr/bin/nvim'
 
-- name: copy nvim configs
+- name: nvim | config tmux
   ansible.builtin.copy:
     src: "{{ role_path }}/files/"
     dest: "/home/{{ ansible_user }}/.config/nvim"
