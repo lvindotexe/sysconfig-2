@@ -70,4 +70,5 @@
   ansible.builtin.copy:
     src: "{{ role_path }}/files/"
     dest: "/home/{{ ansible_user }}/.config/nvim"
+    force: true
     remote_src: no
