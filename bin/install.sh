@@ -45,22 +45,18 @@ update_or_clone_repo() {
         if git status | grep -q "Your branch is behind"; then
             echo "Repository is behind. Pulling changes..."
             git pull
-            return 0
         else
             echo "Repository is up to date."
-            return 1
         fi
     else
         echo "Cloning the repository..."
         git clone "$REPO_URL" "$DEST_FOLDER" || { echo "Failed to clone repository."; exit 1; }
         cd "$DEST_FOLDER"
-        return 0
     fi
 }
 
 # Update or clone the repository
 update_or_clone_repo
-repo_updated=$?
 
 # Check for Ansible and install if not present
 if ! command -v ansible >/dev/null 2>&1; then
@@ -89,12 +85,8 @@ else
     echo "Ansible is already installed."
 fi
 
-# Run the playbook with extra_args if the repository was updated or freshly cloned
-if [ $repo_updated -eq 0 ]; then
-    echo "Running the Ansible playbook..."
-    ansible-playbook local.yml $extra_args
-else
-    echo "No updates. Skipping playbook execution."
-fi
+# Always run the playbook after ensuring the repository exists
+echo "Running the Ansible playbook..."
+ansible-playbook local.yml $extra_args
 
 echo "Script execution completed."
