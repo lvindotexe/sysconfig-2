@@ -6,15 +6,16 @@
   roles:
     - nvim
     - bash
+    - tmux
   tasks:
     - name: Install packages on Arch Linux
       ansible.builtin.package:
         name:
-          - htop
           - tmux
           - neovim
           - neofetch
-          - noto-fonts
+          - bash-completion
+          # - noto-fonts
         state: present
         use: pacman
       when: ansible_os_family == "Archlinux"
@@ -25,23 +26,7 @@
           - htop
           - tmux
           - neofetch
-          - fonts-noto
+          # - fonts-noto
         state: present
         use: apt
       when: ansible_os_family == "Debian"
-    
-    - name: ensure wallpaper dir exists
-      file: 
-        path: /home/{{ansible_user }}/.local/share/wallpapers
-        state:  directory
-        owner:  root
-        group:  root
-        mode: '0755' 
-
-    - name: Copy wallpaper
-      ansible.builtin.copy:
-        src: static/wallpaper.jpg
-        dest: /home/{{ ansible_user }}/.local/share/wallpapers/wallpape.jpg
-        owner: root
-        group: root
-        mode: '0644'
