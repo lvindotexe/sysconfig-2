@@ -2,16 +2,19 @@
 
 set -e
 
-# Repository URL
+# Paths
+CONFIG_DIR="$HOME/.config/dotfiles"
+DOTFILES_DIR="$HOME/.dotfiles"
+SSH_DIR="$HOME/.ssh"
 REPO_URL="https://github.com/lvindotexe/sysconfig-2.git"
-# Initialize DEST_FOLDER with a hardcoded value
-DEST_FOLDER="sysconfig-2"
+
 # The extra_args variable will be set based on the current non-root user
 extra_args=""
 
 # Check if the script is running as root and warn the user
 if [ "$(id -u)" -eq 0 ]; then
     echo "Warning: It's not recommended to run this script as root."
+    exit 1
 else
     # Set extra_args to use the current user for Ansible
     extra_args="-e ansible_user=$(whoami)"
@@ -38,9 +41,9 @@ install_ansible() {
 
 # Function to update or clone the repository
 update_or_clone_repo() {
-    if [ -d "$DEST_FOLDER" ]; then
+    if [ -d "$DOTFILES_DIR" ]; then
         echo "Repository folder exists. Checking for updates..."
-        cd "$DEST_FOLDER"
+        cd "$DOTFILES_DIR"
         git fetch
         if git status | grep -q "Your branch is behind"; then
             echo "Repository is behind. Pulling changes..."
@@ -50,8 +53,8 @@ update_or_clone_repo() {
         fi
     else
         echo "Cloning the repository..."
-        git clone "$REPO_URL" "$DEST_FOLDER" || { echo "Failed to clone repository."; exit 1; }
-        cd "$DEST_FOLDER"
+        git clone "$REPO_URL" "$DOTFILES_DIR" || { echo "Failed to clone repository."; exit 1; }
+        cd "$DOTFILES_DIR"
     fi
 }
 
@@ -85,8 +88,25 @@ else
     echo "Ansible is already installed."
 fi
 
-# Always run the playbook after ensuring the repository exists
-echo "Running the Ansible playbook..."
-ansible-playbook local.yml $extra_args
+# Generate SSH keys
+if ! [[ -f "$SSH_DIR/authorized_keys" ]]; then
+  mkdir -p "$SSH_DIR"
 
+  chmod 700 "$SSH_DIR"
+
+  ssh-keygen -b 4096 -t rsa -f "$SSH_DIR/id_rsa" -N "" -C "$USER@$HOSTNAME"
+
+  cat "$SSH_DIR/id_rsa.pub" >> "$SSH_DIR/authorized_keys"
+fi
+
+# Update Galaxy
+ansible-galaxy install -r requirements.yml
+
+# Run playbook
+echo "Running the Ansible playbook..."
+if [[ -f "$CONFIG_DIR/vault-password.txt" ]]; then
+  ansible-playbook --diff --extra-vars "@$CONFIG_DIR/values.yml" --vault-password-file "$CONFIG_DIR/vault-password.txt" "$DOTFILES_DIR/main.yml" "$@"
+else
+  ansible-playbook --diff --extra-vars "@$CONFIG_DIR/values.yml" "$DOTFILES_DIR/main.yml" "$@"
+fi
 echo "Script execution completed."

@@ -1,29 +1,41 @@
 ---
 - hosts: localhost
   connection: local
-  become: true
-  gather_facts: true
   roles:
-    - nvim
-    - bash
     - tmux
+    - bash
+    - nvim
   tasks:
+    - name: set roles
+      set_fact:
+        roles: "{{ ansible_run_tags != ['all'] and ansible_run_tags or default_roles | difference(exclude_roles | default([])) }}"
+      tags:
+        - always
+      
     - name: Install packages on Arch Linux
       ansible.builtin.package:
         name:
           - tmux
-          - neovim
           - neofetch
+          - tree
           - bash-completion
           # - noto-fonts
         state: present
         use: pacman
       when: ansible_os_family == "Archlinux"
 
+    - name: Install Neovim on Arch Linux
+      ansible.builtin.package:
+        name: neovim
+        state: present
+      ignore_errors: yes
+      when: ansible_os_family == "Archlinux"
+
     - name: Install packages on Ubuntu
       ansible.builtin.package:
         name:
           - htop
+          - tree
           - tmux
           - neofetch
           # - fonts-noto
