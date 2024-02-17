@@ -13,7 +13,7 @@ set $term alacritty
 set $menu dmenu_path | dmenu | xargs swaymsg exec --
 
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /home/al/.local/share/wallpapers/wallpepe.jpg
+output * bg /home/al/.local/share/wallpapers/wallpepe.jpg fill
 
 ### Idle configuration
  exec swayidle -w \

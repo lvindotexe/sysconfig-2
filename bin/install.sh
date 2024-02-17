@@ -15,9 +15,6 @@ extra_args=""
 if [ "$(id -u)" -eq 0 ]; then
     echo "Warning: It's not recommended to run this script as root."
     exit 1
-else
-    # Set extra_args to use the current user for Ansible
-    extra_args="-e ansible_user=$(whoami)"
 fi
 
 # Function to install Ansible based on the detected package manager
@@ -107,6 +104,6 @@ echo "Running the Ansible playbook..."
 if [[ -f "$CONFIG_DIR/vault-password.txt" ]]; then
   ansible-playbook --diff --extra-vars "@$CONFIG_DIR/values.yml" --vault-password-file "$CONFIG_DIR/vault-password.txt" "$DOTFILES_DIR/main.yml" "$@"
 else
-  ansible-playbook --diff --extra-vars "@$CONFIG_DIR/values.yml" "$DOTFILES_DIR/main.yml" "$@"
+  ansible-playbook --diff --extra-vars "@$CONFIG_DIR/values.yml" "$DOTFILES_DIR/main.yml" "$@" --ask-become-pass 
 fi
 echo "Script execution completed."

@@ -1,44 +1,31 @@
----
 - hosts: localhost
   connection: local
-  roles:
-    - tmux
-    - bash
-    - nvim
-  tasks:
-    - name: set roles
-      set_fact:
-        roles: "{{ ansible_run_tags != ['all'] and ansible_run_tags or default_roles | difference(exclude_roles | default([])) }}"
-      tags:
-        - always
-      
-    - name: Install packages on Arch Linux
-      ansible.builtin.package:
-        name:
-          - tmux
-          - neofetch
-          - tree
-          - bash-completion
-          # - noto-fonts
-        state: present
-        use: pacman
-      when: ansible_os_family == "Archlinux"
+  gather_facts: yes
+  vars:
+    default_roles: []
 
-    - name: Install Neovim on Arch Linux
-      ansible.builtin.package:
-        name: neovim
-        state: present
-      ignore_errors: yes
-      when: ansible_os_family == "Archlinux"
+  tasks: 
+    - name: Dynamically list all roles in the 'roles' directory
+      ansible.builtin.shell: ls -d roles/*/ | xargs -n 1 basename
+      register: roles_output
+      changed_when: false
 
-    - name: Install packages on Ubuntu
+    - name: Set dynamic roles fact
+      ansible.builtin.set_fact:
+        dynamic_roles: "{{ roles_output.stdout_lines }}"
+
+    - name: Install packages conditionally
       ansible.builtin.package:
-        name:
-          - htop
-          - tree
-          - tmux
-          - neofetch
-          # - fonts-noto
+        name: "{{ item.packages }}"
         state: present
-        use: apt
-      when: ansible_os_family == "Debian"
+      become: true
+      loop:
+        - { os_family: "Archlinux", packages: [ "tmux", "neofetch", "tree", "bash-completion", "noto-fonts" ] }
+        - { os_family: "Debian", packages: [ "htop", "tree", "tmux", "neofetch", "fonts-noto" ] }
+      when: ansible_os_family == item.os_family
+
+    - name: Run dynamically discovered roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ dynamic_roles }}"
+      when: dynamic_roles is defined and dynamic_roles | length > 0

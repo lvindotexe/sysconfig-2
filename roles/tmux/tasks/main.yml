@@ -10,9 +10,14 @@
     repo: https://github.com/tmux-plugins/tpm
     dest: ~/.tmux/plugins/tpm
 
+- name: Print Current User
+  ansible.builtin.debug:
+    msg: "The current user is {{ ansible_user_id }}"
+
+
 - name: "tmux | Configure tmux"
   ansible.builtin.copy:
     src: "{{ role_path }}/files/"
-    dest: "/home/{{ ansible_user }}/.config/tmux"
+    dest: "/home/{{ ansible_user_id }}/.config/tmux"
     force: true
     remote_src: no
