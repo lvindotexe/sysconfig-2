@@ -86,15 +86,41 @@ else
 fi
 
 # Generate SSH keys
-if ! [[ -f "$SSH_DIR/authorized_keys" ]]; then
-  mkdir -p "$SSH_DIR"
 
+# Check if SSH directory exists and has the necessary files
+if [[ -f "$SSH_DIR/id_rsa" ]] && [[ -f "$SSH_DIR/id_rsa.pub" ]]; then
+  echo "Existing SSH keys found. Using them."
+
+  # Ensure the SSH directory permissions are correct
+  chmod 700 "$SSH_DIR"
+
+  # Append the public key to authorized_keys if it's not already there
+  if ! grep -qF "$(cat "$SSH_DIR/id_rsa.pub")" "$SSH_DIR/authorized_keys" 2>/dev/null; then
+    cat "$SSH_DIR/id_rsa.pub" >> "$SSH_DIR/authorized_keys"
+    echo "Public key added to authorized_keys."
+  else
+    echo "Public key already in authorized_keys."
+  fi
+else
+  # If the keys don't exist, create the directory, generate the keys, and add to authorized_keys
+  echo "No existing SSH keys found. Generating new keys."
+  
+  mkdir -p "$SSH_DIR"
   chmod 700 "$SSH_DIR"
 
   ssh-keygen -b 4096 -t rsa -f "$SSH_DIR/id_rsa" -N "" -C "$USER@$HOSTNAME"
-
+  
   cat "$SSH_DIR/id_rsa.pub" >> "$SSH_DIR/authorized_keys"
+  echo "New SSH keys generated and added to authorized_keys."
 fi
+
+# Ensure authorized_keys file permissions are correct
+if [[ -f "$SSH_DIR/authorized_keys" ]]; then
+  chmod 600 "$SSH_DIR/authorized_keys"
+fi
+
+echo "SSH key setup complete."
+
 
 # Update Galaxy
 ansible-galaxy install -r requirements.yml
