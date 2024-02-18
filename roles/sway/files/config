@@ -16,10 +16,10 @@ set $menu dmenu_path | dmenu | xargs swaymsg exec --
 output * bg /home/al/.local/share/wallpapers/wallpepe.jpg fill
 
 ### Idle configuration
- exec swayidle -w \
-          timeout 300 'swaylock -f -c 000000' \
-          timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-          before-sleep 'swaylock -f -c 000000'
+#  exec swayidle -w \
+#           timeout 300 'swaylock -f -c 000000' \
+#           timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
+#           before-sleep 'swaylock -f -c 000000'
 # This will lock your screen after 300 seconds of inactivity, then turn off
 # your displays after another 300 seconds, and turn your screens back on when
 # resumed. It will also lock your screen before your computer goes to sleep.
@@ -164,5 +164,9 @@ bar {
 }
 
 exec_always --no-startup-id blueman-applet
+
+# Gaps
+gaps inner 10
+gaps outer 10
 
 include /etc/sway/config.d/*

@@ -34,7 +34,6 @@ alias l='ls -CF'
 
 #editors
 alias vim='nvim'
-alias code="codium"
 
 # Add an "alert" alias for long running commands.  Use like so:
 #  sleep 10; alert

@@ -1,28 +1,30 @@
----
-- name: sway | ensure wallpaper dir exists
-  file: 
-    path: /home/{{ansible_user_id }}/.local/share/wallpapers
-    state:  directory
-    force: yes
-    mode: '0755' 
+- name: sway
+  tags: desktop
+  block:
+    - name: ensure wallpaper dir exists
+      file:
+        path: /home/{{ ansible_user_id }}/.local/share/wallpapers
+        state: directory
+        force: yes
+        mode: '0755'
 
-- name: sway | copy wallpaper
-  ansible.builtin.copy:
-    src: wallpaper.jpg
-    dest: /home/{{ ansible_user_id }}/.local/share/wallpapers/wallpape.jpg
-    mode: '0644'
-    force: yes
+    - name: copy wallpaper
+      ansible.builtin.copy:
+        src: wallpaper.jpg
+        dest: /home/{{ ansible_user_id }}/.local/share/wallpapers/wallpaper.jpg
+        mode: '0644'
+        force: yes
 
-- name: sway | ensure config dir exists
-  file: 
-    path: /home/{{ansible_user_id }}/.config/sway
-    state:  directory
-    force: yes
-    mode: '0755' 
+    - name: ensure config dir exists
+      file:
+        path: /home/{{ ansible_user_id }}/.config/sway
+        state: directory
+        force: yes
+        mode: '0755'
 
-- name: sway  |  copy sway config
-  ansible.builtin.copy:
-    src: config
-    dest: "/home/{{ ansible_user_id }}/.config/sway/config"
-    mode: '0644'
-    force: yes
+    - name: copy sway config
+      ansible.builtin.copy:
+        src: config
+        dest: "/home/{{ ansible_user_id }}/.config/sway/config"
+        mode: '0644'
+        force: yes
