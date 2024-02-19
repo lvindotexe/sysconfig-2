@@ -6,6 +6,7 @@ set -e
 CONFIG_DIR="$HOME/.config/dotfiles"
 DOTFILES_DIR="$HOME/.dotfiles"
 SSH_DIR="$HOME/.ssh"
+VALUES_FILE="$HOME/.config/dotfiles/values.yml"
 REPO_URL="https://github.com/lvindotexe/sysconfig-2.git"
 
 # The extra_args variable will be set based on the current non-root user
@@ -16,6 +17,32 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "Warning: It's not recommended to run this script as root."
     exit 1
 fi
+
+# Check for the existence of values.yml in the current directory
+
+if ! [[ -f "$VALUES_FILE" ]]; then
+  echo "The file $VALUES_FILE does not exist. Please generate it."
+  
+  read -p "Would you like to generate $VALUES_FILE now? (y/n) " answer
+  if [[ "$answer" = "y" ]]; then
+    echo "Generating $VALUES_FILE..."
+    mkdir -p "$HOME/.config/dotfiles"
+    # Ask the user for their Git username and email
+    read -p "Enter your Git user name: " git_user_name
+    read -p "Enter your Git user email: " git_user_email
+
+    # Generate values.yml with the user's input
+    echo "---" > "$VALUES_FILE"  # Start of the YAML file
+    echo "git_user_name: $git_user_name" >> "$VALUES_FILE"
+    echo "git_user_email: $git_user_email" >> "$VALUES_FILE"
+
+    echo "$VALUES_FILE generated with your Git user name and email."
+  else
+    echo "Please generate $VALUES_FILE before proceeding."
+    exit 1
+  fi
+fi
+
 
 # Function to install Ansible based on the detected package manager
 install_ansible() {
@@ -86,7 +113,6 @@ else
 fi
 
 # Generate SSH keys
-
 # Check if SSH directory exists and has the necessary files
 if [[ -f "$SSH_DIR/id_rsa" ]] && [[ -f "$SSH_DIR/id_rsa.pub" ]]; then
   echo "Existing SSH keys found. Using them."
