@@ -1,7 +1,6 @@
 ---
 - name: Setup Environment
   hosts: localhost
-  become: yes  # Use sudo to become root, remove or set to no if not needed
   gather_facts: yes
 
   roles:
@@ -9,9 +8,3 @@
     - nvim
     - sway
     - tmux
-
-  tasks:
-    - name: Execute custom dotfiles script
-      ansible.builtin.script:
-        cmd: bin/dotfiles.sh
-      become: no  # Run as the current user or as specified; adjust as needed
