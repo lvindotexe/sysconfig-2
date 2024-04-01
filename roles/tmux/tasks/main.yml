@@ -8,12 +8,7 @@
 - name: "tmux | install TPM"
   ansible.builtin.git:
     repo: https://github.com/tmux-plugins/tpm
-    dest: ~/.tmux/plugins/tpm
-
-- name: Print Current User
-  ansible.builtin.debug:
-    msg: "The current user is {{ ansible_user_id }}"
-
+    dest: /home/{{ ansible_user_id }}/.config/tmux/plugins/tpm
 
 - name: "tmux | Configure tmux"
   ansible.builtin.copy:

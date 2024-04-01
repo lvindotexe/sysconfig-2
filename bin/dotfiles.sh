@@ -18,7 +18,6 @@ fi
 # Check for the existence of values.yml in the current directory
 if [ ! -f "$VALUES_FILE" ]; then
   echo "The file $VALUES_FILE does not exist. Please generate it."
-  
   printf "Would you like to generate %s now? (y/n) " "$VALUES_FILE"
   read answer
   if [ "$answer" = "y" ]; then
