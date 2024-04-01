@@ -1,5 +1,6 @@
 ---
 - name: nvim  | install nvim 
+  become: true
   block:
     - name: nvim  | download latest nvim release
       get_url:
