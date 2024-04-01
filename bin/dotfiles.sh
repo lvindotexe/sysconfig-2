@@ -20,11 +20,11 @@ fi
 
 # Check for the existence of values.yml in the current directory
 
-if ! [[ -f "$VALUES_FILE" ]]; then
+if [ ! -f "$VALUES_FILE" ]; then
   echo "The file $VALUES_FILE does not exist. Please generate it."
   
   read -p "Would you like to generate $VALUES_FILE now? (y/n) " answer
-  if [[ "$answer" = "y" ]]; then
+  if [ "$answer" = "y" ]; then
     echo "Generating $VALUES_FILE..."
     mkdir -p "$HOME/.config/dotfiles"
     # Ask the user for their Git username and email
