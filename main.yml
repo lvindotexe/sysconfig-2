@@ -6,5 +6,6 @@
   roles:
     - bash
     - nvim
+    - obsidian
     - tmux
     - sway
