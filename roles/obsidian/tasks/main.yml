@@ -1,4 +1,3 @@
----
 - name: install Obsidian
   block:
     - name: Copy Icon
@@ -26,4 +25,3 @@
         mode: '0755'
 
     - name: Setup desktop Entry
-      
