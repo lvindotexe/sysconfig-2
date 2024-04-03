@@ -23,5 +23,3 @@
         url: "{{ download_url.stdout }}"
         dest: "~/Apps/obsidian.AppImage"
         mode: '0755'
-
-    - name: Setup desktop Entry
