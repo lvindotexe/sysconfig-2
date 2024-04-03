@@ -33,7 +33,6 @@ if [ ! -f "$VALUES_FILE" ]; then
     echo "git_user_name: $git_user_name" >> "$VALUES_FILE"
     echo "git_user_email: $git_user_email" >> "$VALUES_FILE"
 
-    echo "$VALUES_FILE generated with your Git user name and email."
   else
     echo "Please generate $VALUES_FILE before proceeding."
     exit 1

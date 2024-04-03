@@ -1,0 +1,29 @@
+---
+- name: install Obsidian
+  block:
+    - name: Copy Icon
+      block:
+        - name: ensure dest dir exists
+          ansible.builtin.file: 
+            path: "~/Apps/Obsidian"
+            state: directory
+            mode: '0755'
+
+        - name: copy Icon
+          ansible.builtin.copy:
+            src: icon.png
+            dest: "~/Apps/Obsidian/icon.png"
+
+    - name: Get latest AppImage download URL
+      ansible.builtin.shell: |
+        curl -s https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | jq -r '.assets[] | select(.name | contains("AppImage")) | .browser_download_url'
+      register: download_url
+
+    - name: Download Obsidian AppImage
+      ansible.builtin.get_url:
+        url: "{{ download_url.stdout }}"
+        dest: "~/Apps/obsidian.AppImage"
+        mode: '0755'
+
+    - name: Setup desktop Entry
+      
