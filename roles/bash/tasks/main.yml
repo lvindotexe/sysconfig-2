@@ -1,4 +1,10 @@
 ---
+- name:  bash  | install programs
+  become: true
+  ansible.builtin.package:
+    name: bat
+    state: present
+
 - name:  bash  |  .bash_aliases is present in the user's home directory
   ansible.builtin.copy:
     src: .bash_aliases

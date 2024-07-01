@@ -1,62 +1,23 @@
----
-- name: nvim  | install nvim 
-  become: true
-  block:
-    - name: nvim  | download latest nvim release
-      get_url:
-        url: 'https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.tar.gz'
-        dest: /tmp/nvim-linux64.tar.gz
-        mode: '0755'
-        owner: root
-      register: nvim_release
+- name: Download the latest Neovim tar.gz
+  ansible.builtin.get_url:
+    url: https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+    dest: /tmp/nvim-linux64.tar.gz
 
-    - name: nvim  | make sure that we start clean
-      file:
-        path: '/tmp/nvim-linux64/'
-        state: absent
+- name: Remove existing Neovim directory
+  ansible.builtin.file:
+    path: /opt/nvim
+    state: absent
+    become: yes
 
-    - name: nvim  | Unpack nvim release
-      ansible.builtin.unarchive:
-        src: /tmp/nvim-linux64.tar.gz
-        dest: /tmp/
-        decrypt: False
-        remote_src: True
+- name: Extract Neovim tar.gz to /opt
+  ansible.builtin.unarchive:
+    src: /tmp/nvim-linux64.tar.gz
+    dest: /opt
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+    become: yes
 
-    - name: nvim  | clean-up previous nvim install
-      become: true
-      file:
-        path: '{{ item }}'
-        state: absent
-      with_items:
-        - /usr/bin/nvim
-        - /usr/lib/nvim/
-        - /usr/share/nvim/
-        - /usr/share/applications/nvim.desktop
-        - /usr/share/icons/hicolor/128x128/apps/nvim.png
-        - /usr/share/locale/en_GB/LC_MESSAGES/nvim.mo
-        - /usr/share/man/man1/nvim.1
-
-    - name: nvim  | install latest nvim release
-      become: true
-      copy:
-        src: '/tmp/nvim-linux64/{{ item.src }}'
-        dest: '{{ item.dest }}'
-        mode: '{{ item.mode }}'
-        owner: root
-        remote_src: True
-        force: True
-      with_items:
-        - { src: 'bin/nvim' , dest: '/usr/bin/nvim' , mode: 'a+x'}
-        - { src: 'lib/nvim/parser' , dest: '/usr/lib/nvim/' , mode: '0755'}
-        - { src: 'man/man1/nvim.1' , dest: '/usr/share/man/man1/nvim.1' , mode: '0644'}
-        - { src: 'share/applications/nvim.desktop' , dest: '/usr/share/applications/nvim.desktop' , mode: '0644'}
-        - { src: 'share/icons/hicolor/128x128/apps/nvim.png', dest: '/usr/share/icons/hicolor/128x128/apps/nvim.png' , mode: '0644'}
-        - { src: 'share/locale/en_GB/LC_MESSAGES/nvim.mo' , dest: '/usr/share/locale/en_GB/LC_MESSAGES/nvim.mo' , mode: '0644'}
-        - { src: 'share/nvim/runtime' , dest: '/usr/share/nvim/' , mode: '0755'}
-
-- name: nvim | config nvim
-  ansible.builtin.copy:
-    src: "{{ role_path }}/files/"
-    dest: "/home/{{ ansible_user_id }}/.config/nvim"
-    force: true
-    remote_src: no
+- name: Remove the downloaded Neovim tar.gz
+  ansible.builtin.file:
+    path: /tmp/nvim-linux64.tar.gz
+    state: absent
