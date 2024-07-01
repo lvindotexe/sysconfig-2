@@ -7,9 +7,6 @@ CONFIG_DIR="$HOME/.config/dotfiles"
 DOTFILES_DIR="$HOME/.dotfiles"
 SSH_DIR="$HOME/.ssh"
 VALUES_FILE="$HOME/.config/dotfiles/values.yml"
-REPO_URL="https://github.com/lvindotexe/sysconfig-2.git"
-
-echo "$DOTFILES_DIR/main.yml"
 
 # Check if the script is running as root and warn the user
 if [ "$(id -u)" -eq 0 ]; then
@@ -44,28 +41,6 @@ install_ansible() {
             ;;
     esac
 }
-
-# Function to update or clone the repository
-update_or_clone_repo() {
-    if [ -d "$DOTFILES_DIR" ]; then
-        echo "Repository folder exists. Checking for updates..."
-        cd "$DOTFILES_DIR" || exit
-        git fetch
-        if git status | grep -q "Your branch is behind"; then
-            echo "Repository is behind. Pulling changes..."
-            git pull
-        else
-            echo "Repository is up to date."
-        fi
-    else
-        echo "Cloning the repository..."
-        git clone "$REPO_URL" "$DOTFILES_DIR" || { echo "Failed to clone repository."; exit 1; }
-        cd "$DOTFILES_DIR" || exit
-    fi
-}
-
-# Update or clone the repository
-update_or_clone_repo
 
 # Check for Ansible and install if not present
 if ! command -v ansible >/dev/null 2>&1; then

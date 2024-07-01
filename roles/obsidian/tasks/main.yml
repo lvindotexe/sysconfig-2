@@ -15,7 +15,7 @@
 
     - name: Get latest AppImage download URL
       ansible.builtin.shell: |
-        curl -s https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | jq -r '.assets[] | select(.name | contains("AppImage")) | .browser_download_url'
+        curl -s https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | jq -r '.assets[] | select(.name | contains("AppImage")) | .browser_download_url' | head -n 1
       register: download_url
 
     - name: Download Obsidian AppImage

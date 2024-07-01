@@ -7,7 +7,7 @@
   ansible.builtin.file:
     path: /opt/nvim
     state: absent
-    become: yes
+  become: true
 
 - name: Extract Neovim tar.gz to /opt
   ansible.builtin.unarchive:
@@ -15,9 +15,10 @@
     dest: /opt
     remote_src: yes
     extra_opts: [--strip-components=1]
-    become: yes
+  become: yes
 
 - name: Remove the downloaded Neovim tar.gz
   ansible.builtin.file:
     path: /tmp/nvim-linux64.tar.gz
     state: absent
+  become: yes
