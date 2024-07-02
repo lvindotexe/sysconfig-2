@@ -1,3 +1,3 @@
 ```sh
-curl -fsSL https://github.com/lvindotexe/sysconfig-2/blob/master/bin/dotfiles.sh
+curl -fsSL https://raw.githubusercontent.com/lvindotexe/sysconfig-2/master/bin/dotfiles.sh | bash
 ```
