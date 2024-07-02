@@ -67,6 +67,27 @@ else
     echo "Ansible is already installed."
 fi
 
+update_or_clone_repo() {
+    if [ -d "$DOTFILES_DIR" ]; then
+        echo "Repository folder exists. Checking for updates..."
+        cd "$DOTFILES_DIR" || exit
+        git fetch
+        if git status | grep -q "Your branch is behind"; then
+            echo "Repository is behind. Pulling changes..."
+            git pull
+        else
+            echo "Repository is up to date."
+        fi
+    else
+        echo "Cloning the repository..."
+        git clone "$REPO_URL" "$DOTFILES_DIR" || { echo "Failed to clone repository."; exit 1; }
+        cd "$DOTFILES_DIR" || exit
+    fi
+}
+
+# Update or clone the repository
+update_or_clone_repo
+
 # Generate SSH keys
 if [ -f "$SSH_DIR/id_rsa" ] && [ -f "$SSH_DIR/id_rsa.pub" ]; then
   echo "Existing SSH keys found. Using them."
