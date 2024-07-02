@@ -7,6 +7,7 @@ CONFIG_DIR="$HOME/.config/dotfiles"
 DOTFILES_DIR="$HOME/.dotfiles"
 SSH_DIR="$HOME/.ssh"
 VALUES_FILE="$HOME/.config/dotfiles/values.yml"
+REPO_URL="https://github.com/lvindotexe/sysconfig-2.git"
 
 # Check if the script is running as root and warn the user
 if [ "$(id -u)" -eq 0 ]; then
