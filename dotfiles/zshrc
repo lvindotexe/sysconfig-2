@@ -1,0 +1,46 @@
+# ~/.zshrc — pure zsh, no frameworks
+
+# Only run for interactive shells
+[[ $- != *i* ]] && return
+
+# -----------------------
+# Secrets
+# -----------------------
+if [[ -f "$HOME/.config/secrets/env" ]]; then
+  source "$HOME/.config/secrets/env"
+fi
+
+# -----------------------
+# Environment
+# -----------------------
+export EDITOR="${EDITOR:-nvim}"
+export VISUAL="${VISUAL:-$EDITOR}"
+export SUDO_EDITOR="${SUDO_EDITOR:-nvim}"
+export PAGER="${PAGER:-less}"
+
+# -----------------------
+# PATH handling
+# -----------------------
+typeset -U path PATH
+
+# nix-darwin system profile
+if [[ -d /run/current-system/sw/bin ]]; then
+  path=(/run/current-system/sw/bin $path)
+fi
+
+# nix daemon profile (safe if missing)
+if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+  source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+elif [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix.sh ]]; then
+  source /nix/var/nix/profiles/default/etc/profile.d/nix.sh
+fi
+
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+# user paths
+path=(
+  "$HOME/.opencode/bin"
+  "$HOME/.local/bin"
+  "$HOME/code/mfe-dev/bin"
+  $path
+)
