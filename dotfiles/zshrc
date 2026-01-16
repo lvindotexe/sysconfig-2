@@ -16,7 +16,7 @@ fi
 export EDITOR="${EDITOR:-nvim}"
 export VISUAL="${VISUAL:-$EDITOR}"
 export SUDO_EDITOR="${SUDO_EDITOR:-nvim}"
-export PAGER="${PAGER:-less}"
+# PAGER is set via Home Manager sessionVariables
 
 # -----------------------
 # PATH handling
@@ -35,7 +35,8 @@ elif [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix.sh ]]; then
   source /nix/var/nix/profiles/default/etc/profile.d/nix.sh
 fi
 
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+# PATH ordering is managed by Home Manager + nix-daemon hook
 
 # user paths
 path=(

@@ -32,9 +32,22 @@ in
   };
 
   home.shellAliases = {
-    cat = "bat";
-    grep = "rg";
-    ls = "eza -lah --group-directories-first --git";
+    # git
+    ga = "git add";
+    gs = "git status";
+    gc = "git commit";
+
+
+    # node / package managers
+    pnpx = "pnpm exec";
+
+    # navigation
+    ".." = "cd ..";
+    "..." = "cd ../..";
+    "...." = "cd ../../..";
+
+    # safer defaults
+    mkdir = "mkdir -p";
   };
 
   home.packages = with pkgs; [
@@ -64,12 +77,31 @@ in
     zsh-history-substring-search
   ];
 
-  programs.neovim = {
+
+  programs.nvf = {
     enable = true;
-    defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
+
+    settings = {
+      vim = {
+        viAlias = false;
+        vimAlias = true;
+
+        # Show absolute number on current line and relative numbers elsewhere.
+        lineNumberMode = "relNumber";
+
+        lsp = {
+          enable = true;
+        };
+
+        # Enable language modules for the toolchains you have installed.
+        languages = {
+          go.enable = true;
+          ts.enable = true;
+        };
+      };
+    };
   };
+  
 
   programs.direnv = {
     enable = true;
@@ -96,6 +128,35 @@ in
     extraConfig = builtins.readFile ./dotfiles/tmux/tmux.conf;
   };
 
+  programs.git = {
+    enable = true;
+    settings = {
+      init.defaultBranch = "main";
+
+      core = {
+        editor = "vim";
+        excludesfile = "~/.gitignore_global";
+      };
+
+      color.ui = "auto";
+
+      fetch.prune = true;
+      pull.ff = "only";
+      push.autoSetupRemote = true;
+      rebase.autoStash = true;
+      rerere.enabled = true;
+      merge.conflictstyle = "zdiff3";
+
+      diff = {
+        algorithm = "histogram";
+        colorMoved = "default";
+      };
+
+      help.autocorrect = "prompt";
+
+    };
+  };
+ 
   programs.gh = {
     # Whether to enable the GitHub CLI (gh).
     enable = true;
