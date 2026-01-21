@@ -213,7 +213,7 @@ in
     enable = true;
     package = null;
     settings = {
-      theme = "catppuccin-mocha";
+      theme = "Catppuccin Mocha";
     };
   };
 
