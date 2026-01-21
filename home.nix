@@ -31,13 +31,21 @@ in
     PAGER = "less";
   };
 
+  # Ensure Nix-provided tools win over macOS system binaries.
+  # This also makes `vim` resolve to the Home Manager/Nix shim when enabled.
+  home.sessionPath = [
+    "/etc/profiles/per-user/${config.home.username}/bin"
+    "${config.home.homeDirectory}/.nix-profile/bin"
+    "/nix/var/nix/profiles/default/bin"
+  ];
+
   home.shellAliases = {
     # git
     ga = "git add";
     gs = "git status";
     gc = "git commit";
 
-
+    cat = "bat";
     # node / package managers
     pnpx = "pnpm exec";
 
@@ -51,14 +59,9 @@ in
   };
 
   home.packages = with pkgs; [
-    age
     bat
-    eza
-    fd
     jq
     ripgrep
-    sops
-    yt-dlp
     vim
 
     deno
