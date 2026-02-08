@@ -15,13 +15,13 @@ Usage: bootstrap.sh [--profile <name>] [--repo <git-url>] [--repo-dir <path>] [-
 
 Examples:
   bootstrap.sh
-  bootstrap.sh --profile linux
-  bootstrap.sh --profile darwin --dry-run
+  bootstrap.sh --profile linux-x86_64
+  bootstrap.sh --profile darwin-aarch64 --dry-run
 EOF
 }
 
 log() {
-  printf '[bootstrap] %s\n' "$*"
+  printf '[bootstrap] %s\n' "$*" >&2
 }
 
 die() {
@@ -30,15 +30,36 @@ die() {
 }
 
 detect_default_profile() {
-  case "$(uname -s)" in
-    Darwin)
-      printf 'darwin\n'
+  local os
+  local arch
+
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  case "${arch}" in
+    x86_64|amd64)
+      arch="x86_64"
       ;;
-    Linux)
-      printf 'linux\n'
+    aarch64|arm64)
+      arch="aarch64"
       ;;
     *)
-      die "unsupported OS: $(uname -s)"
+      die "unsupported architecture: ${arch}"
+      ;;
+  esac
+
+  case "${os}" in
+    Darwin)
+      printf 'darwin-%s\n' "${arch}"
+      ;;
+    Linux)
+      if grep -qi 'microsoft' /proc/version 2>/dev/null; then
+        log "WSL detected; using linux-${arch} profile"
+      fi
+      printf 'linux-%s\n' "${arch}"
+      ;;
+    *)
+      die "unsupported OS: ${os}"
       ;;
   esac
 }
@@ -100,17 +121,86 @@ run_home_manager() {
     hm-bak
     switch
     --flake
-    "${repo_dir}#${profile}"
+    "path:${repo_dir}#${profile}"
   )
 
   if [[ "${dry_run}" == "1" ]]; then
     hm_cmd+=(--dry-run)
   fi
 
-  hm_cmd+=(--impure)
-
   log "Applying profile ${profile}"
   "${hm_cmd[@]}"
+}
+
+ensure_local_config() {
+  local local_config
+  local username
+  local home_dir
+  local darwin_home
+  local linux_home
+
+  local_config="${repo_dir}/local.nix"
+
+  if [[ -f "${local_config}" ]]; then
+    return
+  fi
+
+  username="${USER:-}"
+  home_dir="${HOME:-}"
+
+  [[ -n "${username}" ]] || die "USER is required to generate local.nix"
+  [[ -n "${home_dir}" ]] || die "HOME is required to generate local.nix"
+
+  darwin_home="/Users/${username}"
+  linux_home="/home/${username}"
+
+  case "$(uname -s)" in
+    Darwin)
+      darwin_home="${home_dir}"
+      ;;
+    Linux)
+      linux_home="${home_dir}"
+      ;;
+  esac
+
+  cat >"${local_config}" <<EOF
+{
+  defaults = {
+    username = "${username}";
+  };
+
+  profiles = {
+    darwin-aarch64 = {
+      homeDirectory = "${darwin_home}";
+    };
+
+    darwin-x86_64 = {
+      homeDirectory = "${darwin_home}";
+    };
+
+    linux-x86_64 = {
+      homeDirectory = "${linux_home}";
+    };
+
+    linux-aarch64 = {
+      homeDirectory = "${linux_home}";
+    };
+  };
+}
+EOF
+
+  log "Created ${local_config}; adjust it if any profile needs a different path"
+}
+
+normalize_profile() {
+  case "${profile}" in
+    darwin)
+      profile="darwin-aarch64"
+      ;;
+    linux)
+      profile="linux-x86_64"
+      ;;
+  esac
 }
 
 while [[ $# -gt 0 ]]; do
@@ -148,8 +238,11 @@ if [[ -z "${profile}" ]]; then
   profile="$(detect_default_profile)"
 fi
 
+normalize_profile
+
 ensure_nix
 ensure_repo
+ensure_local_config
 run_home_manager
 
 log "Done"
