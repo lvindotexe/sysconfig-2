@@ -1,4 +1,4 @@
-# ~/.zshrc — pure zsh, no frameworks
+# ~/.bashrc
 
 # Only run for interactive shells
 [[ $- != *i* ]] && return

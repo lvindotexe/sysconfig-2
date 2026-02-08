@@ -1,30 +1,14 @@
 { config, pkgs, lib, ... }:
 
 let
-  secretsFile = ./secrets.yaml;
-  hasSecrets = builtins.pathExists secretsFile;
-  envUser = builtins.getEnv "USER";
-  envHome = builtins.getEnv "HOME";
-  envPath = builtins.getEnv "PATH";
-  pathEntries = lib.filter (p: p != "") (lib.splitString ":" envPath);
-  hasGhosttyInPath = lib.any (dir: builtins.pathExists "${dir}/ghostty") pathEntries;
-  hasGhosttyAppBundle = builtins.pathExists "/Applications/Ghostty.app/Contents/MacOS/ghostty";
-  hasGhosttyBinary = hasGhosttyInPath || hasGhosttyAppBundle;
+  hasGhosttySupport = pkgs.stdenv.isDarwin || pkgs.stdenv.isLinux;
 in
 {
-  assertions = [
-    {
-      assertion = envUser != "";
-      message = "home.username requires USER in the environment. Re-run with --impure.";
-    }
-    {
-      assertion = envHome != "";
-      message = "home.homeDirectory requires HOME in the environment. Re-run with --impure.";
-    }
+  imports = [
+    ./modules/shell/common.nix
+    ./modules/shell/bash.nix
+    ./modules/shell/zsh.nix
   ];
-
-  home.username = envUser;
-  home.homeDirectory = envHome;
 
   # Prefer XDG locations like ~/.config/...
   xdg.enable = true;
@@ -39,12 +23,15 @@ in
   programs.home-manager.enable = true;
 
   # First activation can require `--backup-file-extension hm-bak` to move any
-  # pre-existing dotfiles aside (e.g. ~/.zshrc -> ~/.zshrc.hm-bak).
+  # pre-existing dotfiles aside (e.g. ~/.bashrc -> ~/.bashrc.hm-bak).
 
   home.sessionVariables = {
     CLICOLOR = "1";
     LESS = "-FRX";
     PAGER = "less";
+    EDITOR = "nvim";
+    VISUAL = "nvim";
+    SUDO_EDITOR = "nvim";
   };
 
   # Ensure Nix-provided tools win over macOS system binaries.
@@ -53,26 +40,12 @@ in
     "/etc/profiles/per-user/${config.home.username}/bin"
     "${config.home.homeDirectory}/.nix-profile/bin"
     "/nix/var/nix/profiles/default/bin"
+    "${config.home.homeDirectory}/.opencode/bin"
+    "${config.home.homeDirectory}/.local/bin"
+    "${config.home.homeDirectory}/code/mfe-dev/bin"
+  ] ++ lib.optionals pkgs.stdenv.isDarwin [
+    "/run/current-system/sw/bin"
   ];
-
-  home.shellAliases = {
-    # git
-    ga = "git add";
-    gs = "git status";
-    gc = "git commit";
-
-    cat = "bat";
-    # node / package managers
-    pnpx = "pnpm exec";
-
-    # navigation
-    ".." = "cd ..";
-    "..." = "cd ../..";
-    "...." = "cd ../../..";
-
-    # safer defaults
-    mkdir = "mkdir -p";
-  };
 
   home.packages = with pkgs; [
     bat
@@ -93,8 +66,6 @@ in
     tmux
     gh
 
-    # history substring search widget for zsh
-    zsh-history-substring-search
   ];
 
 
@@ -122,26 +93,6 @@ in
     };
   };
 
-
-  programs.direnv = {
-    enable = true;
-    enableZshIntegration = true;
-    nix-direnv.enable = true;
-  };
-
-  programs.fzf = {
-    enable = true;
-    enableZshIntegration = true;
-    defaultCommand = "fd --type f";
-    fileWidgetCommand = "fd --type f";
-    changeDirWidgetCommand = "fd --type d";
-  };
-
-  programs.starship = {
-    enable = true;
-    enableZshIntegration = true;
-    settings = builtins.fromTOML (builtins.readFile ./dotfiles/starship/starship.toml);
-  };
 
   programs.tmux = {
     enable = true;
@@ -226,60 +177,17 @@ in
     };
   };
 
-  programs.ghostty = lib.mkIf hasGhosttyBinary {
-    enable = true;
-    package = null;
-    systemd.enable = false;
-    settings = {
-      theme = "Catppuccin Mocha";
-    };
-  };
+  programs.ghostty = lib.mkIf hasGhosttySupport (lib.mkMerge [
+    {
+      enable = true;
+      settings = {
+        theme = "Catppuccin Mocha";
+      };
+    }
+    (lib.mkIf pkgs.stdenv.isDarwin {
+      package = null;
+      systemd.enable = false;
+    })
+  ]);
 
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-
-    # Silence upcoming default change warnings.
-    dotDir = config.home.homeDirectory;
-
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-
-    history = {
-      size = 100000;
-      save = 100000;
-      share = true;
-      ignoreDups = true;
-      ignoreSpace = true;
-      extended = true;
-    };
-
-    # "Fancy" split: keep the large/complex stuff in a normal file, but still
-    # let Home Manager generate/manage ~/.zshrc.
-    initContent = lib.mkMerge [
-      (lib.mkBefore (builtins.readFile ./dotfiles/zshrc))
-      ''
-        # history substring search plugin
-        if [[ -f ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh ]]; then
-          source ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh
-        fi
-
-        setopt AUTO_CD
-        setopt INTERACTIVE_COMMENTS
-        setopt HIST_IGNORE_ALL_DUPS
-        setopt HIST_REDUCE_BLANKS
-
-        bindkey -e
-        bindkey "^[[A" history-substring-search-up
-        bindkey "^[[B" history-substring-search-down
-      ''
-    ];
-  };
-
-  # Optional secrets support via sops-nix.
-  # This is a no-op unless ./secrets.yaml exists.
-  # sops = lib.mkIf hasSecrets {
-  #   defaultSopsFile = secretsFile;
-  #   age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
-  # };
 }

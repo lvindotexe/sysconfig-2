@@ -87,7 +87,7 @@ There are no unit-test suites in this repo. The closest equivalents are:
 
 ### Naming Conventions
 
-- Use `camelCase` for local Nix bindings (e.g. `secretsFile`, `hasSecrets`).
+- Use `camelCase` for local Nix bindings.
 - Use descriptive names; avoid single-letter bindings except in tiny lambdas.
 - Keep identifiers ASCII.
 
@@ -95,7 +95,7 @@ There are no unit-test suites in this repo. The closest equivalents are:
 
 - Prefer Nix-native types:
   - lists `[...]`, attrsets `{ ... }`, strings `"..."`, paths `./relative/path`.
-- Use `builtins.pathExists` for optional files (as done for `secrets.yaml`).
+- Use `builtins.pathExists` for optional files.
 - For config-derived paths, prefer `${config.home.homeDirectory}/...`.
 
 ### Error Handling / Safety
@@ -104,12 +104,6 @@ There are no unit-test suites in this repo. The closest equivalents are:
   - Gate optional features with `lib.mkIf` or `builtins.pathExists`.
 - When referencing external files, ensure they exist or are guarded.
 - Don’t introduce evaluation-time failures for optional tools.
-
-### Secrets
-
-- Do not commit secrets (e.g. `secrets.yaml`, age keys, tokens).
-- Keep secret support opt-in and no-op when files are missing.
-- If adding `sops-nix` wiring, ensure it is wrapped with `lib.mkIf hasSecrets`.
 
 ### Imports and String Interpolation
 
@@ -137,5 +131,5 @@ There are no unit-test suites in this repo. The closest equivalents are:
 - `nix flake check -L` passes (or explain what is not applicable).
 - `nix build .#homeConfigurations.alvinv.activationPackage` succeeds.
 - New options follow existing grouping and indentation.
-- No secrets added; no references to missing files without guards.
+- No references to missing files without guards.
 - Any changes to `dotfiles/` are referenced from `home.nix`.
