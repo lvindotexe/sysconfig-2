@@ -5,6 +5,11 @@ let
   hasSecrets = builtins.pathExists secretsFile;
   envUser = builtins.getEnv "USER";
   envHome = builtins.getEnv "HOME";
+  envPath = builtins.getEnv "PATH";
+  pathEntries = lib.filter (p: p != "") (lib.splitString ":" envPath);
+  hasGhosttyInPath = lib.any (dir: builtins.pathExists "${dir}/ghostty") pathEntries;
+  hasGhosttyAppBundle = builtins.pathExists "/Applications/Ghostty.app/Contents/MacOS/ghostty";
+  hasGhosttyBinary = hasGhosttyInPath || hasGhosttyAppBundle;
 in
 {
   assertions = [
@@ -116,7 +121,7 @@ in
       };
     };
   };
-  
+
 
   programs.direnv = {
     enable = true;
@@ -171,7 +176,7 @@ in
 
     };
   };
- 
+
   programs.gh = {
     # Whether to enable the GitHub CLI (gh).
     enable = true;
@@ -221,9 +226,10 @@ in
     };
   };
 
-  programs.ghostty = {
+  programs.ghostty = lib.mkIf hasGhosttyBinary {
     enable = true;
     package = null;
+    systemd.enable = false;
     settings = {
       theme = "Catppuccin Mocha";
     };
