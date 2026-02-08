@@ -50,8 +50,8 @@ ensure_nix() {
 
   command -v curl >/dev/null 2>&1 || die "curl is required to install Nix"
 
-  log "Nix not found. Installing via Determinate installer"
-  curl -fsSL https://install.determinate.systems/nix | sh -s -- install --no-confirm
+  log "Nix not found. Installing via NixOS nix-installer"
+  curl -sSfL https://artifacts.nixos.org/nix-installer | sh -s -- install --no-confirm
 
   if [[ -r /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
     # shellcheck source=/dev/null
@@ -96,11 +96,11 @@ run_home_manager() {
     run
     home-manager/master
     --
+    -b
+    hm-bak
     switch
     --flake
     "${repo_dir}#${profile}"
-    --backup-file-extension
-    hm-bak
   )
 
   if [[ "${dry_run}" == "1" ]]; then
