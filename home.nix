@@ -165,16 +165,6 @@ in
       spinner = "enabled";
     };
 
-    # Written to `$XDG_CONFIG_HOME/gh/hosts.yml`.
-    hosts = {
-      # Per-host gh settings for github.com.
-      "github.com" = {
-        # What protocol to use when performing git operations. Supported values: ssh, https
-        git_protocol = "ssh";
-        # The default GitHub username for this host.
-        user = "lvindotexe";
-      };
-    };
   };
 
   programs.ghostty = lib.mkIf hasGhosttySupport (lib.mkMerge [
