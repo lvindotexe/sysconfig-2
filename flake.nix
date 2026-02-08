@@ -17,17 +17,24 @@
 
   outputs = { nixpkgs, home-manager, nvf, ... }:
     let
-      system = "aarch64-darwin";
-      pkgs = nixpkgs.legacyPackages.${system};
+      mkHome = { system }:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.${system};
+          modules = [
+            ./home.nix
+            nvf.homeManagerModules.default
+          ];
+        };
     in
     {
-      homeConfigurations."alvinv" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
+      homeConfigurations = {
+        darwin = mkHome {
+          system = "aarch64-darwin";
+        };
 
-        modules = [
-          ./home.nix
-          nvf.homeManagerModules.default
-        ];
+        linux = mkHome {
+          system = "x86_64-linux";
+        };
       };
     };
 }

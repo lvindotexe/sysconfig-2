@@ -3,12 +3,23 @@
 let
   secretsFile = ./secrets.yaml;
   hasSecrets = builtins.pathExists secretsFile;
+  envUser = builtins.getEnv "USER";
+  envHome = builtins.getEnv "HOME";
 in
 {
-  # Home Manager needs a bit of information about you and the
-  # paths it should manage.
-  home.username = "alvinv";
-  home.homeDirectory = "/Users/alvinv";
+  assertions = [
+    {
+      assertion = envUser != "";
+      message = "home.username requires USER in the environment. Re-run with --impure.";
+    }
+    {
+      assertion = envHome != "";
+      message = "home.homeDirectory requires HOME in the environment. Re-run with --impure.";
+    }
+  ];
+
+  home.username = envUser;
+  home.homeDirectory = envHome;
 
   # Prefer XDG locations like ~/.config/...
   xdg.enable = true;
@@ -75,6 +86,7 @@ in
     tree
     moreutils
     tmux
+    gh
 
     # history substring search widget for zsh
     zsh-history-substring-search
