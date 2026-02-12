@@ -211,7 +211,7 @@ prep_etc_for_darwin() {
     return
   fi
 
-  local dominated_files=(/etc/nix/nix.conf /etc/zshenv)
+  local dominated_files=(/etc/nix/nix.conf /etc/nix/nix.custom.conf /etc/zshenv)
   for f in "${dominated_files[@]}"; do
     if [[ -e "$f" && ! -L "$f" ]]; then
       log "Backing up $f -> ${f}.before-nix-darwin"
