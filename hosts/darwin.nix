@@ -13,6 +13,7 @@
 
     casks = [
       "ghostty"
+      "google-chrome"
       "obs"
     ];
 
