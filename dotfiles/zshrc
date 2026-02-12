@@ -1,7 +1,0 @@
-# ~/.zshrc — pure zsh, no frameworks
-
-# Only run for interactive shells
-[[ $- != *i* ]] && return
-
-# Shell-local settings only.
-# Shared PATH and editor defaults are managed by Home Manager.
