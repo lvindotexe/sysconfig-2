@@ -195,6 +195,32 @@ LOCALEOF
 }
 
 # ---------------------------------------------------------------------------
+# Prepare /etc for nix-darwin
+# ---------------------------------------------------------------------------
+
+# The Nix installer creates /etc/nix/nix.conf and /etc/zshenv, but
+# nix-darwin expects to manage these as symlinks.  Back them up so the
+# first activation doesn't abort with "unexpected files in /etc".
+prep_etc_for_darwin() {
+  if [[ "${HOST_OS}" != "Darwin" ]]; then
+    return
+  fi
+
+  # Already managed by nix-darwin — nothing to do
+  if command -v darwin-rebuild >/dev/null 2>&1; then
+    return
+  fi
+
+  local dominated_files=(/etc/nix/nix.conf /etc/zshenv)
+  for f in "${dominated_files[@]}"; do
+    if [[ -e "$f" && ! -L "$f" ]]; then
+      log "Backing up $f -> ${f}.before-nix-darwin"
+      sudo mv "$f" "${f}.before-nix-darwin"
+    fi
+  done
+}
+
+# ---------------------------------------------------------------------------
 # Apply
 # ---------------------------------------------------------------------------
 
@@ -313,6 +339,7 @@ ensure_nix
 ensure_homebrew
 ensure_repo
 write_local_config
+prep_etc_for_darwin
 apply
 
 log "Done"
