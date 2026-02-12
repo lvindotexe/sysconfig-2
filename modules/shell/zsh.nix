@@ -9,7 +9,6 @@
     enable = true;
     enableCompletion = true;
 
-    # Silence upcoming default change warnings.
     dotDir = config.home.homeDirectory;
 
     autosuggestion.enable = true;

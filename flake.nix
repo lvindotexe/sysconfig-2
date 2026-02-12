@@ -1,5 +1,5 @@
 {
-  description = "Home Manager configuration of alvinv";
+  description = "Unified Nix configuration — nix-darwin + Home Manager";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -9,103 +9,110 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nvf = {
       url = "github:notashelf/nvf";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { nixpkgs, home-manager, nvf, ... }:
+  outputs = { self, nixpkgs, home-manager, nix-darwin, nvf, ... }:
     let
-      localConfig =
-        if builtins.pathExists ./local.nix then
-          import ./local.nix
-        else
-          { };
+      hmModules = [
+        ./home.nix
+        nvf.homeManagerModules.default
+      ];
 
-      defaultUsername =
-        if localConfig ? defaults && localConfig.defaults ? username then
-          localConfig.defaults.username
-        else
-          "user";
+      local =
+        if builtins.pathExists ./local.nix
+        then import ./local.nix
+        else null;
 
-      profileOverrides =
-        if localConfig ? profiles then
-          localConfig.profiles
-        else
-          { };
-
-      mkIdentity = { profileName, system }:
-        let
-          profileConfig =
-            if builtins.hasAttr profileName profileOverrides then
-              builtins.getAttr profileName profileOverrides
-            else
-              { };
-
-          username =
-            if profileConfig ? username then
-              profileConfig.username
-            else
-              defaultUsername;
-
-          homeDirectory =
-            if profileConfig ? homeDirectory then
-              profileConfig.homeDirectory
-            else if builtins.match ".*-darwin" system != null then
-              "/Users/${username}"
-            else
-              "/home/${username}";
-        in
-        {
-          inherit username homeDirectory;
-        };
-
-      mkHome = { profileName, system }:
-        let
-          identity = mkIdentity {
-            inherit profileName system;
-          };
-        in
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.${system};
+      mkDarwin = { system, username }:
+        nix-darwin.lib.darwinSystem {
+          inherit system;
           modules = [
-            ./home.nix
-            nvf.homeManagerModules.default
+            ./hosts/darwin.nix
+            home-manager.darwinModules.home-manager
             {
-              home.username = identity.username;
-              home.homeDirectory = identity.homeDirectory;
+              nixpkgs.hostPlatform = system;
+
+              system.primaryUser = username;
+              system.configurationRevision =
+                self.rev or self.dirtyRev or null;
+
+              users.users.${username}.home = "/Users/${username}";
+
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${username} = {
+                imports = hmModules;
+                home.username = username;
+                home.homeDirectory = "/Users/${username}";
+              };
             }
           ];
         };
 
-      matrixHomeConfigurations = {
-        darwin-aarch64 = mkHome {
-          profileName = "darwin-aarch64";
-          system = "aarch64-darwin";
+      mkNixOS = { system, username, extraModules ? [] }:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./hosts/nixos.nix
+            home-manager.nixosModules.home-manager
+            {
+              nixpkgs.hostPlatform = system;
+
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.${username} = {
+                imports = hmModules;
+                home.username = username;
+                home.homeDirectory = "/home/${username}";
+              };
+            }
+          ] ++ extraModules;
         };
 
-        darwin-x86_64 = mkHome {
-          profileName = "darwin-x86_64";
-          system = "x86_64-darwin";
+      mkStandaloneHome = { system, username }:
+        let
+          isDarwin = builtins.match ".*-darwin" system != null;
+          homeDirectory =
+            if isDarwin then "/Users/${username}"
+            else "/home/${username}";
+        in
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.${system};
+          modules = hmModules ++ [
+            {
+              home.username = username;
+              home.homeDirectory = homeDirectory;
+            }
+          ];
         };
-
-        linux-x86_64 = mkHome {
-          profileName = "linux-x86_64";
-          system = "x86_64-linux";
-        };
-
-        linux-aarch64 = mkHome {
-          profileName = "linux-aarch64";
-          system = "aarch64-linux";
-        };
-      };
     in
     {
-      homeConfigurations = matrixHomeConfigurations // {
-        # Backward-compatible aliases for existing bootstrap usage.
-        darwin = matrixHomeConfigurations.darwin-aarch64;
-        linux = matrixHomeConfigurations.linux-x86_64;
+      darwinConfigurations =
+        if local != null && local.platform == "darwin"
+        then { ${local.hostname} = mkDarwin { inherit (local) system username; }; }
+        else {};
+
+      nixosConfigurations =
+        if local != null && local.platform == "nixos"
+        then { ${local.hostname} = mkNixOS { inherit (local) system username; }; }
+        else {};
+
+      homeConfigurations =
+        if local != null && local.platform == "linux"
+        then { ${local.username} = mkStandaloneHome { inherit (local) system username; }; }
+        else {};
+
+      homeManagerModules.default = {
+        imports = hmModules;
       };
     };
 }

@@ -1,18 +1,19 @@
 # AGENTS.md
 
-This repository is a Nix flake containing a Home Manager configuration (Darwin).
-It is intended to be evaluated/applied with `nix` + `home-manager`.
-
-No Cursor rules (`.cursor/rules/` or `.cursorrules`) or Copilot rules
-(`.github/copilot-instructions.md`) are present in this repo.
+This repository is a Nix flake containing a unified nix-darwin + Home Manager
+configuration. On macOS it produces `darwinConfigurations`; on Linux it produces
+standalone `homeConfigurations` or exports a module for NixOS.
 
 ## Quick Commands
 
 ### Build
 
-- Build the Home Manager activation package:
+- Build the darwin system (macOS):
+  - `nix build .#darwinConfigurations.AMS-OFFICE145.system`
+  - With logs: `nix build -L --print-build-logs .#darwinConfigurations.AMS-OFFICE145.system`
+
+- Build standalone Home Manager (Linux):
   - `nix build .#homeConfigurations.alvinv.activationPackage`
-  - With logs: `nix build -L --print-build-logs .#homeConfigurations.alvinv.activationPackage`
 
 - Show flake outputs:
   - `nix flake show`
@@ -20,41 +21,40 @@ No Cursor rules (`.cursor/rules/` or `.cursorrules`) or Copilot rules
 
 ### Check / Lint
 
-- Run all flake checks (closest thing to “lint” here):
+- Run all flake checks:
   - `nix flake check -L`
-  - With full logs: `nix flake check -L --print-build-logs`
 
-- Evaluate a single attribute (fast sanity check):
-  - `nix eval .#homeConfigurations.alvinv.config.home.stateVersion`
+- Evaluate a single attribute:
+  - `nix eval .#darwinConfigurations.AMS-OFFICE145.config.system.stateVersion`
   - `nix eval .#homeConfigurations.alvinv.config.programs.git.enable`
 
 ### Apply (be careful)
 
 - Dry run (preferred for agents):
-  - `home-manager switch --flake .#alvinv --dry-run`
+  - macOS: `darwin-rebuild switch --flake .#AMS-OFFICE145 --dry-run`
+  - Linux: `home-manager switch --flake .#alvinv --dry-run`
 
 - Actually apply (only when requested by the user):
-  - `home-manager switch --flake .#alvinv`
+  - macOS: `darwin-rebuild switch --flake .#AMS-OFFICE145`
+  - Linux: `home-manager switch --flake .#alvinv`
 
-### “Run a Single Test” Equivalent
+### "Run a Single Test" Equivalent
 
 There are no unit-test suites in this repo. The closest equivalents are:
 
-- Build just one output (single “test”):
-  - `nix build .#homeConfigurations.alvinv.activationPackage`
+- Build just one output:
+  - `nix build .#darwinConfigurations.AMS-OFFICE145.system`
 
-- Evaluate just one option/attr to narrow failures:
-  - `nix eval .#homeConfigurations.alvinv.config.<path.to.option>`
-
-- Run one check derivation (when available):
-  - `nix build .#checks.aarch64-darwin.<checkName>`
-  - Discover names via `nix flake show`.
+- Evaluate just one option:
+  - `nix eval .#darwinConfigurations.AMS-OFFICE145.config.<path.to.option>`
 
 ## Repository Layout
 
-- `flake.nix`: flake entrypoint; defines `homeConfigurations.alvinv`.
-- `home.nix`: Home Manager module (the main config).
-- `loki.nix`: separate flake wrapping `vf-loki` as a package/app.
+- `flake.nix`: flake entrypoint; defines `darwinConfigurations`, `homeConfigurations`, `homeManagerModules`.
+- `home.nix`: shared Home Manager module (portable across all modes).
+- `hosts/darwin.nix`: nix-darwin system configuration (macOS).
+- `bootstrap.sh`: host-aware setup script.
+- `modules/shell/`: modular shell configuration (common, bash, zsh, aliases).
 - `dotfiles/`: managed dotfiles referenced by `home.nix`.
 
 ## Code Style Guidelines
@@ -103,7 +103,7 @@ There are no unit-test suites in this repo. The closest equivalents are:
 - Favor configuration that degrades gracefully:
   - Gate optional features with `lib.mkIf` or `builtins.pathExists`.
 - When referencing external files, ensure they exist or are guarded.
-- Don’t introduce evaluation-time failures for optional tools.
+- Don't introduce evaluation-time failures for optional tools.
 
 ### Imports and String Interpolation
 
@@ -113,23 +113,21 @@ There are no unit-test suites in this repo. The closest equivalents are:
 
 ### Comments
 
-- Keep comments short and high-signal: explain “why”, not “what”.
+- Keep comments short and high-signal: explain "why", not "what".
 - Prefer removing stale comments over expanding them.
 
 ## Agent Workflow Expectations
 
 - Prefer `nix eval` and `nix build` for validation.
-- Do not run `home-manager switch` without explicit user approval; use
-  `--dry-run` for safety.
-- Avoid changing user-specific constants unless asked:
-  - `home.username`, `home.homeDirectory`, `system` in `flake.nix`.
+- Do not run `darwin-rebuild switch` or `home-manager switch` without explicit
+  user approval; use `--dry-run` for safety.
 - Avoid non-determinism: no network fetches outside Nix flakes; prefer pinned
   inputs and flake locks.
 
 ## Review Checklist (Before Sending PR/Changes)
 
 - `nix flake check -L` passes (or explain what is not applicable).
-- `nix build .#homeConfigurations.alvinv.activationPackage` succeeds.
+- Relevant build target succeeds (darwin system or HM activation package).
 - New options follow existing grouping and indentation.
 - No references to missing files without guards.
 - Any changes to `dotfiles/` are referenced from `home.nix`.

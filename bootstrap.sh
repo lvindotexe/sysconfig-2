@@ -6,17 +6,19 @@ REPO_DIR_DEFAULT="${HOME}/.local/share/sysconfig-2"
 
 repo_url="${REPO_URL_DEFAULT}"
 repo_dir="${REPO_DIR_DEFAULT}"
-profile=""
 dry_run="0"
 
 usage() {
   cat <<'EOF'
-Usage: bootstrap.sh [--profile <name>] [--repo <git-url>] [--repo-dir <path>] [--dry-run]
+Usage: bootstrap.sh [--repo <git-url>] [--repo-dir <path>] [--dry-run]
+
+Detects how Nix is installed (standalone, nix-darwin, NixOS) and sets
+up Home Manager accordingly.
 
 Examples:
   bootstrap.sh
-  bootstrap.sh --profile linux-x86_64
-  bootstrap.sh --profile darwin-aarch64 --dry-run
+  bootstrap.sh --dry-run
+  bootstrap.sh --repo-dir ~/dotfiles
 EOF
 }
 
@@ -29,40 +31,51 @@ die() {
   exit 1
 }
 
-detect_default_profile() {
-  local os
-  local arch
+# ---------------------------------------------------------------------------
+# Host detection
+# ---------------------------------------------------------------------------
 
-  os="$(uname -s)"
-  arch="$(uname -m)"
+detect_host() {
+  HOST_OS="$(uname -s)"
+  HOST_ARCH="$(uname -m)"
 
-  case "${arch}" in
-    x86_64|amd64)
-      arch="x86_64"
-      ;;
-    aarch64|arm64)
-      arch="aarch64"
-      ;;
-    *)
-      die "unsupported architecture: ${arch}"
-      ;;
+  case "${HOST_ARCH}" in
+    x86_64|amd64)  HOST_ARCH="x86_64"  ;;
+    aarch64|arm64)  HOST_ARCH="aarch64" ;;
+    *)              die "unsupported architecture: ${HOST_ARCH}" ;;
   esac
 
-  case "${os}" in
-    Darwin)
-      printf 'darwin-%s\n' "${arch}"
-      ;;
-    Linux)
-      if grep -qi 'microsoft' /proc/version 2>/dev/null; then
-        log "WSL detected; using linux-${arch} profile"
-      fi
-      printf 'linux-%s\n' "${arch}"
-      ;;
-    *)
-      die "unsupported OS: ${os}"
-      ;;
-  esac
+  HOST_WSL=0
+  if [[ "${HOST_OS}" == "Linux" ]] && grep -qi 'microsoft' /proc/version 2>/dev/null; then
+    HOST_WSL=1
+    log "WSL detected"
+  fi
+
+  log "Host: ${HOST_OS} ${HOST_ARCH}"
 }
+
+# Determine how Nix is present on this machine.
+# Sets NIX_METHOD to one of: none, standalone, nix-darwin, nixos
+detect_nix_method() {
+  if ! command -v nix >/dev/null 2>&1; then
+    NIX_METHOD="none"
+    return
+  fi
+
+  if [[ -f /run/current-system/darwin-version ]]; then
+    NIX_METHOD="nix-darwin"
+  elif [[ -f /etc/NIXOS ]] || [[ -f /run/current-system/nixos-version ]]; then
+    NIX_METHOD="nixos"
+  else
+    NIX_METHOD="standalone"
+  fi
+
+  log "Nix method: ${NIX_METHOD}"
+}
+
+# ---------------------------------------------------------------------------
+# Installation
+# ---------------------------------------------------------------------------
 
 ensure_nix() {
   if command -v nix >/dev/null 2>&1; then
@@ -71,7 +84,7 @@ ensure_nix() {
 
   command -v curl >/dev/null 2>&1 || die "curl is required to install Nix"
 
-  log "Nix not found. Installing via NixOS nix-installer"
+  log "Nix not found. Installing via nix-installer"
   curl -sSfL https://artifacts.nixos.org/nix-installer | sh -s -- install --no-confirm
 
   if [[ -r /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
@@ -83,6 +96,32 @@ ensure_nix() {
   fi
 
   command -v nix >/dev/null 2>&1 || die "Nix installation finished but nix is still unavailable"
+
+  # Re-detect now that Nix is available
+  detect_nix_method
+}
+
+ensure_homebrew() {
+  if [[ "${HOST_OS}" != "Darwin" ]]; then
+    return
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    return
+  fi
+
+  command -v curl >/dev/null 2>&1 || die "curl is required to install Homebrew"
+
+  log "Homebrew not found. Installing..."
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  if [[ "${HOST_ARCH}" == "aarch64" ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  else
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+
+  command -v brew >/dev/null 2>&1 || die "Homebrew installation finished but brew is still unavailable"
 }
 
 ensure_repo() {
@@ -108,108 +147,138 @@ ensure_repo() {
   git clone "${repo_url}" "${repo_dir}"
 }
 
-run_home_manager() {
-  local hm_cmd
-  hm_cmd=(
-    nix
-    --extra-experimental-features
-    "nix-command flakes"
-    run
-    home-manager/master
-    --
-    -b
-    hm-bak
-    switch
-    --flake
-    "path:${repo_dir}#${profile}"
-  )
+# ---------------------------------------------------------------------------
+# Local config
+# ---------------------------------------------------------------------------
 
-  if [[ "${dry_run}" == "1" ]]; then
-    hm_cmd+=(--dry-run)
-  fi
+write_local_config() {
+  local config_file="${repo_dir}/local.nix"
 
-  log "Applying profile ${profile}"
-  "${hm_cmd[@]}"
-}
-
-ensure_local_config() {
-  local local_config
-  local username
-  local home_dir
-  local darwin_home
-  local linux_home
-
-  local_config="${repo_dir}/local.nix"
-
-  if [[ -f "${local_config}" ]]; then
+  if [[ -f "${config_file}" ]]; then
+    log "local.nix already exists; skipping"
     return
   fi
 
-  username="${USER:-}"
-  home_dir="${HOME:-}"
+  local hostname
+  hostname="$(hostname -s 2>/dev/null || hostname)"
 
-  [[ -n "${username}" ]] || die "USER is required to generate local.nix"
-  [[ -n "${home_dir}" ]] || die "HOME is required to generate local.nix"
+  local username="${USER:-$(whoami)}"
 
-  darwin_home="/Users/${username}"
-  linux_home="/home/${username}"
+  local system
+  case "${HOST_OS}" in
+    Darwin) system="${HOST_ARCH}-darwin" ;;
+    Linux)  system="${HOST_ARCH}-linux" ;;
+    *)      die "unsupported OS: ${HOST_OS}" ;;
+  esac
 
-  case "$(uname -s)" in
-    Darwin)
-      darwin_home="${home_dir}"
-      ;;
+  local platform
+  case "${HOST_OS}" in
+    Darwin) platform="darwin" ;;
     Linux)
-      linux_home="${home_dir}"
+      if [[ "${NIX_METHOD}" == "nixos" ]]; then
+        platform="nixos"
+      else
+        platform="linux"
+      fi
       ;;
   esac
 
-  cat >"${local_config}" <<EOF
+  log "Writing local.nix (hostname=${hostname}, system=${system})"
+  cat > "${config_file}" <<LOCALEOF
 {
-  defaults = {
-    username = "${username}";
-  };
-
-  profiles = {
-    darwin-aarch64 = {
-      homeDirectory = "${darwin_home}";
-    };
-
-    darwin-x86_64 = {
-      homeDirectory = "${darwin_home}";
-    };
-
-    linux-x86_64 = {
-      homeDirectory = "${linux_home}";
-    };
-
-    linux-aarch64 = {
-      homeDirectory = "${linux_home}";
-    };
-  };
+  hostname = "${hostname}";
+  username = "${username}";
+  system = "${system}";
+  platform = "${platform}";
 }
-EOF
-
-  log "Created ${local_config}; adjust it if any profile needs a different path"
+LOCALEOF
 }
 
-normalize_profile() {
-  case "${profile}" in
-    darwin)
-      profile="darwin-aarch64"
+# ---------------------------------------------------------------------------
+# Apply
+# ---------------------------------------------------------------------------
+
+apply() {
+  local flake_ref="path:${repo_dir}"
+
+  case "${HOST_OS}" in
+    Darwin)
+      local machine_hostname
+      machine_hostname="$(hostname -s 2>/dev/null || hostname)"
+
+      if command -v darwin-rebuild >/dev/null 2>&1; then
+        local cmd=(darwin-rebuild switch --flake "${flake_ref}#${machine_hostname}")
+        if [[ "${dry_run}" == "1" ]]; then
+          cmd+=(--dry-run)
+        fi
+        log "Applying darwin configuration: ${machine_hostname}"
+        "${cmd[@]}"
+      else
+        local cmd=(
+          nix
+          --extra-experimental-features "nix-command flakes"
+          run nix-darwin --
+          switch --flake "${flake_ref}#${machine_hostname}"
+        )
+        if [[ "${dry_run}" == "1" ]]; then
+          cmd+=(--dry-run)
+        fi
+        log "First run — bootstrapping nix-darwin for: ${machine_hostname}"
+        "${cmd[@]}"
+      fi
       ;;
-    linux)
-      profile="linux-x86_64"
+
+    Linux)
+      if [[ "${NIX_METHOD}" == "nixos" ]]; then
+        local machine_hostname
+        machine_hostname="$(hostname -s 2>/dev/null || hostname)"
+
+        local cmd=(sudo nixos-rebuild switch --flake "${flake_ref}#${machine_hostname}")
+        if [[ "${dry_run}" == "1" ]]; then
+          cmd+=(--dry-run)
+        fi
+        log "Applying NixOS configuration: ${machine_hostname}"
+        "${cmd[@]}"
+        return
+      fi
+
+      local username="${USER:-user}"
+
+      if command -v home-manager >/dev/null 2>&1; then
+        local cmd=(home-manager switch --flake "${flake_ref}#${username}")
+        if [[ "${dry_run}" == "1" ]]; then
+          cmd+=(--dry-run)
+        fi
+        log "Applying home-manager configuration: ${username}"
+        "${cmd[@]}"
+      else
+        local cmd=(
+          nix
+          --extra-experimental-features "nix-command flakes"
+          run home-manager/master --
+          -b hm-bak switch
+          --flake "${flake_ref}#${username}"
+        )
+        if [[ "${dry_run}" == "1" ]]; then
+          cmd+=(--dry-run)
+        fi
+        log "First run — bootstrapping home-manager for: ${username}"
+        "${cmd[@]}"
+      fi
+      ;;
+
+    *)
+      die "unsupported OS: ${HOST_OS}"
       ;;
   esac
 }
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --profile)
-      [[ $# -ge 2 ]] || die "--profile requires a value"
-      profile="$2"
-      shift 2
-      ;;
     --repo)
       [[ $# -ge 2 ]] || die "--repo requires a value"
       repo_url="$2"
@@ -234,15 +303,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "${profile}" ]]; then
-  profile="$(detect_default_profile)"
-fi
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
-normalize_profile
-
+detect_host
+detect_nix_method
 ensure_nix
+ensure_homebrew
 ensure_repo
-ensure_local_config
-run_home_manager
+write_local_config
+apply
 
 log "Done"

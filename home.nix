@@ -10,20 +10,11 @@ in
     ./modules/shell/zsh.nix
   ];
 
-  # Prefer XDG locations like ~/.config/...
   xdg.enable = true;
 
-  # This value determines the Home Manager release that your
-  # configuration is compatible with. This helps avoid breakage
-  # when a new Home Manager release introduces backwards
-  # incompatible changes.
   home.stateVersion = "25.11";
 
-  # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
-
-  # First activation can require `--backup-file-extension hm-bak` to move any
-  # pre-existing dotfiles aside (e.g. ~/.bashrc -> ~/.bashrc.hm-bak).
 
   home.sessionVariables = {
     CLICOLOR = "1";
@@ -34,15 +25,11 @@ in
     SUDO_EDITOR = "nvim";
   };
 
-  # Ensure Nix-provided tools win over macOS system binaries.
-  # This also makes `vim` resolve to the Home Manager/Nix shim when enabled.
   home.sessionPath = [
     "/etc/profiles/per-user/${config.home.username}/bin"
     "${config.home.homeDirectory}/.nix-profile/bin"
     "/nix/var/nix/profiles/default/bin"
-    "${config.home.homeDirectory}/.opencode/bin"
     "${config.home.homeDirectory}/.local/bin"
-    "${config.home.homeDirectory}/code/mfe-dev/bin"
   ] ++ lib.optionals pkgs.stdenv.isDarwin [
     "/run/current-system/sw/bin"
   ];
@@ -65,9 +52,7 @@ in
     moreutils
     tmux
     gh
-
   ];
-
 
   programs.nvf = {
     enable = true;
@@ -77,22 +62,178 @@ in
         viAlias = false;
         vimAlias = true;
 
-        # Show absolute number on current line and relative numbers elsewhere.
         lineNumberMode = "relNumber";
+
+        autocomplete = {
+          enableSharedCmpSources = true;
+          blink-cmp = {
+            enable = true;
+            "friendly-snippets".enable = true;
+          };
+        };
+
+        extraPackages = with pkgs; [
+          eslint_d
+        ];
 
         lsp = {
           enable = true;
+          lspconfig.enable = true;
         };
 
-        # Enable language modules for the toolchains you have installed.
-        languages = {
-          go.enable = true;
-          ts.enable = true;
+        binds.whichKey.enable = true;
+
+        augroups = [
+          {
+            name = "NvfLspKeymaps";
+            clear = true;
+          }
+          {
+            name = "NvfSessions";
+            clear = true;
+          }
+        ];
+
+        autocmds = [
+          {
+            event = [ "LspAttach" ];
+            group = "NvfLspKeymaps";
+            desc = "Set buffer-local LSP keymaps";
+            callback = lib.generators.mkLuaInline ''
+              function(args)
+                local bufnr = args.buf
+                local base = { buffer = bufnr, silent = true }
+
+                local function map(mode, lhs, rhs, desc)
+                  vim.keymap.set(mode, lhs, rhs, vim.tbl_extend("force", base, { desc = desc }))
+                end
+
+                map("n", "gd", vim.lsp.buf.definition, "Go to definition")
+                map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
+                map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
+                map("n", "gr", vim.lsp.buf.references, "References")
+                map("n", "K", vim.lsp.buf.hover, "Hover")
+                map("n", "[d", vim.diagnostic.goto_prev, "Prev diagnostic")
+                map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
+                map("n", "<leader>rn", vim.lsp.buf.rename, "Rename symbol")
+                map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+              end
+            '';
+          }
+          {
+            event = [ "User" ];
+            pattern = [ "SessionLoadPost" ];
+            group = "NvfSessions";
+            desc = "Re-run FileType after session load";
+            callback = lib.generators.mkLuaInline ''
+              function()
+                vim.schedule(function()
+                  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+                    if vim.api.nvim_buf_is_loaded(buf) then
+                      local name = vim.api.nvim_buf_get_name(buf)
+                      if name ~= "" and vim.bo[buf].buftype == "" then
+                        vim.api.nvim_buf_call(buf, function()
+                          if vim.bo.filetype == "" then
+                            vim.cmd("silent! filetype detect")
+                          end
+                          vim.api.nvim_exec_autocmds("FileType", { buffer = buf })
+                        end)
+                      end
+                    end
+                  end
+                end)
+              end
+            '';
+          }
+        ];
+
+        maps.normal."<leader>b" = {
+          action = "<cmd>Neotree toggle<cr>";
+          desc = "Toggle file tree";
+          silent = true;
         };
+
+        theme = {
+          enable = true;
+          name = "catppuccin";
+          style = "mocha";
+        };
+
+        diagnostics = {
+          enable = true;
+          config = {
+            signs = true;
+            underline = true;
+            update_in_insert = true;
+            virtual_text = true;
+            virtual_lines = false;
+          };
+
+          nvim-lint = {
+            enable = true;
+            lint_after_save = true;
+
+            linters_by_ft = {
+              javascript      = [ "eslint_d" ];
+              javascriptreact = [ "eslint_d" ];
+              typescript      = [ "eslint_d" ];
+              typescriptreact = [ "eslint_d" ];
+            };
+
+            linters.eslint_d.required_files = [
+              "eslint.config.js"
+              ".eslintrc"
+              ".eslintrc.js"
+              ".eslintrc.cjs"
+              ".eslintrc.json"
+            ];
+          };
+        };
+
+        languages = {
+          go = {
+            enable = true;
+            lsp.enable = true;
+          };
+          ts = {
+            enable = true;
+            lsp.enable = true;
+          };
+          nix = {
+            enable = true;
+            lsp.enable = true;
+          };
+        };
+
+        telescope.enable = true;
+
+        session."nvim-session-manager" = {
+          enable = true;
+          setupOpts.autoload_mode = "CurrentDir";
+        };
+
+        filetree."neo-tree" = {
+          enable = true;
+          setupOpts = {
+            enable_git_status = true;
+            enable_diagnostics = true;
+            filesystem.filtered_items = {
+              visible = true;
+              hide_dotfiles = false;
+              hide_gitignored = false;
+            };
+          };
+        };
+
+        git = {
+          enable = true;
+          gitsigns.enable = true;
+        };
+
+        utility."diffview-nvim".enable = true;
       };
     };
   };
-
 
   programs.tmux = {
     enable = true;
@@ -105,7 +246,7 @@ in
       init.defaultBranch = "main";
 
       core = {
-        editor = "vim";
+        editor = "nvim";
         excludesfile = "~/.gitignore_global";
       };
 
@@ -124,60 +265,30 @@ in
       };
 
       help.autocorrect = "prompt";
-
     };
   };
 
   programs.gh = {
-    # Whether to enable the GitHub CLI (gh).
     enable = true;
-
-    # Written to `$XDG_CONFIG_HOME/gh/config.yml`.
     settings = {
-      # What protocol to use when performing git operations. Supported values: ssh, https
       git_protocol = "ssh";
-      # What editor gh should run when creating issues, pull requests, etc. If blank, will refer to environment.
-      editor = "";
-      # When to interactively prompt. This is a global config that cannot be overridden by hostname. Supported values: enabled, disabled
       prompt = "enabled";
-      # Preference for editor-based interactive prompting. This is a global config that cannot be overridden by hostname. Supported values: enabled, disabled
-      prefer_editor_prompt = "disabled";
-      # A pager program to send command output to, e.g. "less". If blank, will refer to environment. Set the value to "cat" to disable the pager.
-      pager = "";
-
-      # Aliases allow you to create nicknames for gh commands
-      aliases = {
-        # `gh co` -> `gh pr checkout`
-        co = "pr checkout";
-      };
-
-      # The path to a unix socket through which to send HTTP connections. If blank, HTTP traffic will be handled by net/http.DefaultTransport.
-      http_unix_socket = "";
-      # What web browser gh should use when opening URLs. If blank, will refer to environment.
-      browser = "";
-      # Whether to display labels using their RGB hex color codes in terminals that support truecolor. Supported values: enabled, disabled
-      color_labels = "disabled";
-      # Whether customizable, 4-bit accessible colors should be used. Supported values: enabled, disabled
-      accessible_colors = "disabled";
-      # Whether an accessible prompter should be used. Supported values: enabled, disabled
-      accessible_prompter = "disabled";
-      # Whether to use a animated spinner as a progress indicator. If disabled, a textual progress indicator is used instead. Supported values: enabled, disabled
-      spinner = "enabled";
+      aliases.co = "pr checkout";
     };
-
+    hosts."github.com" = {
+      git_protocol = "ssh";
+      user = "lvindotexe";
+    };
   };
 
   programs.ghostty = lib.mkIf hasGhosttySupport (lib.mkMerge [
     {
       enable = true;
-      settings = {
-        theme = "Catppuccin Mocha";
-      };
+      settings.theme = "Catppuccin Mocha";
     }
     (lib.mkIf pkgs.stdenv.isDarwin {
       package = null;
       systemd.enable = false;
     })
   ]);
-
 }

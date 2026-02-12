@@ -17,42 +17,32 @@ Use the bootstrap script on a fresh machine:
 What it does:
 
 - Installs Nix if needed.
-- Clones this repo to `${XDG_CONFIG_HOME:-~/.config}/home-manager` (or `--hm-root`).
-- Detects your profile (`darwin-aarch64`, `linux-x86_64`, etc.).
-- Creates `local.nix` with username/home overrides if missing.
-- Runs Home Manager switch with backup extension `hm-bak`.
+- Clones this repo to `~/.local/share/sysconfig-2`.
+- On macOS: bootstraps nix-darwin (which includes Home Manager).
+- On Linux: bootstraps standalone Home Manager.
+- On NixOS: prints instructions to add the Home Manager module.
 
 Useful flags:
 
 ```bash
 ./bootstrap.sh --dry-run
-./bootstrap.sh --profile linux-x86_64
-./bootstrap.sh --hm-root ~/.config/home-manager
+./bootstrap.sh --repo-dir ~/dotfiles
 ./bootstrap.sh --repo https://github.com/<you>/<fork>.git
 ```
 
 ### Manual install
 
-If you already have Nix/Home Manager tooling and want direct control:
+If you already have the tooling installed:
 
 ```bash
-# from the repo root
-home-manager switch --flake .#darwin-aarch64
-# or
-home-manager switch --flake .#linux-x86_64
+# macOS (nix-darwin)
+darwin-rebuild switch --flake .
+
+# Linux (standalone home-manager)
+home-manager switch --flake .
 ```
 
-Auto-detect current user/profile (impure eval):
-
-```bash
-home-manager switch --impure --flake .
-```
-
-Safe first run:
-
-```bash
-home-manager switch --impure --flake . --dry-run
-```
+Both commands auto-select the right output key (`$(hostname -s)` for darwin, `$USER` for home-manager).
 
 ## Usage
 
@@ -63,35 +53,43 @@ Common workflows after install:
 nix flake show
 
 # fast sanity checks
-nix eval .#homeConfigurations.linux-x86_64.config.home.stateVersion
+nix eval .#homeConfigurations.alvinv.config.home.stateVersion
 
-# build only the activation package
-nix build .#homeConfigurations.linux-x86_64.activationPackage
+# build only (no activation)
+nix build .#darwinConfigurations.AMS-OFFICE145.system
+nix build .#homeConfigurations.alvinv.activationPackage
 
 # run full checks
 nix flake check -L
 
 # apply changes
-home-manager switch --flake .#linux-x86_64
+darwin-rebuild switch --flake .          # macOS
+home-manager switch --flake .            # Linux
 
 # rollback
 home-manager generations
 home-manager switch --rollback
 ```
 
-Profile names:
+## Adding a new machine
 
-```text
-aarch64-darwin -> darwin-aarch64
-x86_64-darwin  -> darwin-x86_64
-x86_64-linux   -> linux-x86_64
-aarch64-linux  -> linux-aarch64
+Add an entry to `flake.nix`:
+
+```nix
+darwinConfigurations."NEW-HOSTNAME" = mkDarwin {
+  system = "aarch64-darwin";
+  username = "your-user";
+};
 ```
 
-Compatibility aliases:
+Or for standalone Linux:
 
-- `darwin` -> `darwin-aarch64`
-- `linux` -> `linux-x86_64`
+```nix
+homeConfigurations."your-user" = mkStandaloneHome {
+  system = "x86_64-linux";
+  username = "your-user";
+};
+```
 
 ## Quirks and gotchas
 
@@ -102,7 +100,7 @@ Compatibility aliases:
 home-manager switch --flake flake.nix
 
 # good
-home-manager switch --flake .#linux-x86_64
+home-manager switch --flake .
 ```
 
 2) `~/.config/home-manager` can be empty and things still work
@@ -127,14 +125,14 @@ Workarounds:
 Use backup extension when applying manually:
 
 ```bash
-home-manager switch --flake .#linux-x86_64 -b hm-bak
+home-manager switch --flake . -b hm-bak
 ```
 
 ## Repo layout
 
-- `flake.nix` - flake inputs/outputs and profile matrix.
+- `flake.nix` - flake inputs/outputs; hosts and users defined inline.
 - `home.nix` - main Home Manager module.
+- `hosts/darwin.nix` - nix-darwin system configuration (macOS).
 - `modules/shell/` - shell modules (common/bash/zsh/aliases).
 - `dotfiles/` - managed config fragments.
-- `local.nix.example` - sample machine-local overrides.
 - `bootstrap.sh` - bootstrap flow for new machines.
