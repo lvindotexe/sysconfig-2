@@ -8,7 +8,13 @@ This repo declaratively manages shell setup, editor/tooling, Git/GitHub CLI, tmu
 
 ### Quick install (recommended)
 
-Use the bootstrap script on a fresh machine:
+Run this on a fresh machine:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lvindotexe/sysconfig-2/refs/heads/master/bootstrap.sh | bash
+```
+
+Or if you've already cloned the repo:
 
 ```bash
 ./bootstrap.sh
