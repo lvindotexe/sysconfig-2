@@ -207,7 +207,7 @@ apply() {
       machine_hostname="$(hostname -s 2>/dev/null || hostname)"
 
       if command -v darwin-rebuild >/dev/null 2>&1; then
-        local cmd=(darwin-rebuild switch --flake "${flake_ref}#${machine_hostname}")
+        local cmd=(sudo darwin-rebuild switch --flake "${flake_ref}#${machine_hostname}")
         if [[ "${dry_run}" == "1" ]]; then
           cmd+=(--dry-run)
         fi
@@ -215,7 +215,7 @@ apply() {
         "${cmd[@]}"
       else
         local cmd=(
-          nix
+          sudo nix
           --extra-experimental-features "nix-command flakes"
           run nix-darwin --
           switch --flake "${flake_ref}#${machine_hostname}"
