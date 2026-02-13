@@ -23,9 +23,7 @@
       extended = true;
     };
 
-    initContent = lib.mkMerge [
-      (lib.mkBefore (builtins.readFile ../../dotfiles/zshrc))
-      ''
+    initContent = ''
         # history substring search plugin
         if [[ -f ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh ]]; then
           source ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh
@@ -39,7 +37,6 @@
         bindkey -e
         bindkey "^[[A" history-substring-search-up
         bindkey "^[[B" history-substring-search-down
-      ''
-    ];
+    '';
   };
 }
