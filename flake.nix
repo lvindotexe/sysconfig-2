@@ -13,9 +13,14 @@
       url = "github:notashelf/nvf";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    worktrunk = {
+      url = "github:max-sixty/worktrunk";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { nixpkgs, home-manager, nvf, ... }:
+  outputs = { nixpkgs, home-manager, nvf, worktrunk, ... }:
     let
       system = "aarch64-darwin";
       username = "alvinv";
@@ -23,6 +28,7 @@
     {
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.${system};
+        extraSpecialArgs = { inherit worktrunk; };
         modules = [
           ./home.nix
           nvf.homeManagerModules.default

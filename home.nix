@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, worktrunk, ... }:
 
 {
   imports = [
@@ -35,7 +35,9 @@
     "/run/current-system/sw/bin"
   ];
 
-  home.packages = with pkgs; [
+  home.packages = [
+    worktrunk.packages.${pkgs.system}.default
+  ] ++ (with pkgs; [
     bat
     jq
     ripgrep
@@ -53,5 +55,5 @@
     moreutils
     tmux
     gh
-  ];
+  ]);
 }

@@ -37,6 +37,8 @@
         bindkey -e
         bindkey "^[[A" history-substring-search-up
         bindkey "^[[B" history-substring-search-down
+
+        eval "$(wt config shell init zsh)"
     '';
   };
 }
