@@ -23,7 +23,7 @@
   outputs = { nixpkgs, home-manager, nvf, worktrunk, ... }:
     let
       system = "aarch64-darwin";
-      username = "alvinv";
+      username = "al";
     in
     {
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {

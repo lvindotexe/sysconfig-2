@@ -55,5 +55,6 @@
     moreutils
     tmux
     gh
+    opencode
   ]);
 }

@@ -4,6 +4,10 @@
   programs.git = {
     enable = true;
     settings = {
+      user = {
+        name = "alvin";
+        email = "lvindotexe@github.com";
+      };
       init.defaultBranch = "main";
 
       core = {
@@ -29,16 +33,4 @@
     };
   };
 
-  programs.gh = {
-    enable = true;
-    settings = {
-      git_protocol = "ssh";
-      prompt = "enabled";
-      aliases.co = "pr checkout";
-    };
-    hosts."github.com" = {
-      git_protocol = "ssh";
-      user = "lvindotexe";
-    };
-  };
 }
